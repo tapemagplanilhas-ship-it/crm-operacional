@@ -1,0 +1,251 @@
+📌 ESCOPO DE ATUALIZAÇÃO — CRM OPERACIONAL
+1️⃣ OBJETIVO DA ATUALIZAÇÃO
+
+Implementar um sistema de autenticação, perfis de acesso e controle operacional, permitindo:
+
+Separação de dados por usuário (vendedor)
+
+Acompanhamento gerencial em tempo real
+
+Administração centralizada e segura
+
+Base para futuras expansões do sistema
+
+2️⃣ PERFIS DE USUÁRIO
+🔐 ADMINISTRADOR (Admin / TI)
+
+Acesso total ao sistema.
+
+Responsabilidades:
+
+Gerenciar usuários
+
+Controlar acessos
+
+Visualizar dados técnicos
+
+Manutenção do sistema
+
+👔 GERÊNCIA
+
+Acesso apenas para acompanhamento e análise.
+
+Responsabilidades:
+
+Visualizar desempenho dos vendedores
+
+Acompanhar clientes e vendas
+
+Análise de resultados
+
+📌 Sem permissão de edição (fase inicial).
+
+🧑‍💼 VENDEDOR
+
+Usuário operacional do sistema.
+
+Responsabilidades:
+
+Gerenciar seus próprios clientes
+
+Registrar e editar vendas
+
+Acompanhar seus resultados
+
+3️⃣ TELAS E FUNCIONALIDADES
+🔐 3.1 Tela de Login
+
+Descrição:
+Tela inicial de acesso ao sistema.
+
+Campos:
+
+Usuário ou e-mail
+
+Senha
+
+Funcionalidades:
+
+Autenticação segura
+
+Mensagens de erro claras
+
+Usuários bloqueados não acessam o sistema
+
+Recuperação de senha somente via administrador
+
+🛠️ 3.2 Painel do Administrador
+📊 Dashboard Administrativo
+
+Total de usuários
+
+Usuários online
+
+Total de clientes
+
+Total de vendas
+
+👥 Gestão de Usuários
+
+Dados exibidos:
+
+Nome
+
+Usuário
+
+Cargo (Admin / Gerência / Vendedor)
+
+Status (ativo / bloqueado)
+
+Online (sim/não)
+
+Último acesso
+
+Ações permitidas:
+
+Criar usuário
+
+Editar dados
+
+Alterar senha
+
+Alterar perfil
+
+Bloquear / desbloquear usuário
+
+🔍 Visualização Técnica (Admin / TI)
+
+Objetivo:
+Auxiliar diagnóstico, segurança e manutenção.
+
+Dados técnicos:
+
+Logs de login (data, hora)
+
+IP de acesso
+
+Navegador
+
+Sistema operacional
+
+Tentativas de login inválidas
+
+Sessões ativas
+
+📌 Acesso restrito ao Admin/TI.
+
+👔 3.3 Painel de Gerência
+📊 Dashboard Geral
+
+Faturamento total
+
+Vendas por período
+
+Ticket médio
+
+Taxa média de fechamento
+
+Ranking de vendedores
+
+🧑‍💼 Lista de Vendedores
+
+Cards clicáveis contendo:
+
+Nome
+
+Status online
+
+Total de vendas
+
+Faturamento
+
+Última venda
+
+📁 Visão Detalhada do Vendedor (somente leitura)
+
+Informações:
+
+Dashboard individual
+
+Lista de clientes
+
+Lista de vendas
+
+🚫 Sem criar
+🚫 Sem editar
+🚫 Sem excluir
+
+🧑‍💼 3.4 Painel do Vendedor
+📊 Dashboard Pessoal
+
+Total de clientes
+
+Vendas realizadas
+
+Taxa de fechamento
+
+Ticket médio
+
+📁 Gestão de Clientes
+
+Criar cliente
+
+Editar cliente
+
+Visualizar histórico de vendas
+
+📌 Apenas clientes do próprio vendedor.
+
+💰 Gestão de Vendas
+
+Registrar nova venda
+
+Editar venda
+
+Visualizar histórico
+
+4️⃣ REGRAS DE PERMISSÃO
+Ação	             Admin   Gerência  Vendedor
+Criar usuário	      ✅	    ❌	    ❌
+Alterar senha	      ✅	    ❌       ❌
+Ver todos os dados    ✅	    ✅       ❌
+Editar clientes	      ✅	    ❌	  (próprios)
+Editar vendas	      ✅	    ❌	  (próprias)
+Visualização técnica  ✅     ❌	    ❌
+
+5️⃣ SEGURANÇA
+
+Senhas criptografadas (hash)
+
+Sessões controladas
+
+Controle de acesso por perfil
+
+Logs de acesso
+
+Bloqueio de usuários
+
+6️⃣ CONSIDERAÇÕES FUTURAS (FORA DO ESCOPO ATUAL)
+
+Reset de senha automático por e-mail
+
+Permissões customizadas
+
+Auditoria de edição
+
+Relatórios exportáveis
+
+Integração com ERP
+
+7️⃣ STATUS DA ENTREGA
+
+🔧 Sistema em desenvolvimento
+
+🚀 Implementação por fases
+
+📈 Estrutura preparada para escalabilidade
+
+✔️ CONCLUSÃO
+
+Esta atualização transforma o CRM em um sistema multiusuário, seguro e escalável, alinhado com a
+operação real da empresa e preparado para crescimento futuro.

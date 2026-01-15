@@ -1,0 +1,845 @@
+/* ============================================== */
+/* SIDEBAR - ESTILOS BÁSICOS                     */
+/* ============================================== */
+
+/* Sidebar principal */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 70px;
+    background: rgb(236, 236, 236);
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    overflow-x: hidden;
+}
+
+.sidebar.expanded {
+    width: 250px;
+}
+
+/* ============================================== */
+/* LOGO DA SIDEBAR - DUAS VERSÕES                */
+/* ============================================== */
+
+.sidebar-logo-toggle {
+    padding: 1.5rem;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: 0.3s ease;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-logo-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.logo-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.1s ease;
+}
+
+/* LOGO PEQUENA (ícone) - visível quando sidebar retraída */
+.logo-small {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+   
+    display: block;
+}
+
+/* LOGO COMPLETA - visível quando sidebar expandida */
+.logo-full {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+
+    display: none; /* Inicialmente escondida */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50px);
+}
+
+/* ÍCONE DE HOVER */
+.logo-hover-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgb(66, 66, 66);
+    font-size: 1.5rem;
+    opacity: 0;
+    visibility: hidden;
+   
+    pointer-events: none;
+}
+
+/* ============================================== */
+/* ESTADOS DA SIDEBAR                             */
+/* ============================================== */
+
+/* SIDEBAR RETRAÍDA (padrão) */
+.sidebar:not(.expanded) .sidebar-logo-toggle {
+    padding: 1rem;
+    min-height: 60px;
+}
+
+.sidebar:not(.expanded) .logo-small {
+    height: 40px;
+    opacity: 1;
+    visibility: visible;
+}
+
+.sidebar:not(.expanded) .logo-full {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* HOVER NA SIDEBAR RETRAÍDA */
+.sidebar:not(.expanded) .sidebar-logo-toggle:hover .logo-small {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.sidebar:not(.expanded) .sidebar-logo-toggle:hover .logo-hover-icon {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* SIDEBAR EXPANDIDA */
+.sidebar.expanded .logo-hover-icon {
+    position: absolute;
+    display: flex;
+    top: 50%;
+    left: 16px; /* Alinhar à esquerda dentro do container */
+    transform: translateY(-50%);
+    color: rgb(66, 66, 66);
+    font-size: 1.5rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+} 
+
+/* SIDEBAR EXPANDIDA */
+.sidebar.expanded .sidebar-logo-toggle {
+    padding: 1.5rem;
+    min-height: 70px;
+    justify-content: flex-start;
+}
+
+.sidebar.expanded .logo-container {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+/* Na sidebar expandida: esconder logo pequena, mostrar logo completa */
+.sidebar.expanded .logo-small {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.sidebar.expanded .logo-full {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* Hover na sidebar expandida: mostrar ícone de retrair */
+.sidebar.expanded .sidebar-logo-toggle:hover .logo-full {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.sidebar.expanded .sidebar-logo-toggle:hover .logo-hover-icon {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%);
+}
+
+/* ============================================== */
+/* ANIMAÇÕES SUAVES                               */
+/* ============================================== */
+
+.sidebar.expanded .logo-full {
+    animation: fadeInLogo 0.3s ease forwards;
+}
+
+@keyframes fadeInLogo {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.sidebar:not(.expanded) .logo-small {
+    animation: fadeInSmall 0.1s ease forwards;
+}
+
+@keyframes fadeInSmall {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+/* ============================================== */
+/* NAVEGAÇÃO                                     */
+/* ============================================== */
+
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0;
+    overflow-x: hidden;
+}
+
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-item {
+    position: relative;
+    margin: 4px 0;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    color: rgba(37, 37, 37, 0.7);
+    text-decoration: none;
+    transition: 0.2s ease;
+    border-left: 3px solid transparent;
+    margin: 0 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.nav-link:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.nav-item.active .nav-link {
+    background: rgba(66, 153, 225, 0.1);
+    color: rgb(214, 10, 10);
+    border-left-color: #ff3c3c;
+}
+
+.nav-link i {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    padding-right: 5px;
+}
+
+.nav-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 1;
+    
+    transition: opacity 0.3s ease, width 0.3s ease;
+    flex-shrink: 0;
+}
+
+/* Sidebar retraída - ocultar texto */
+.sidebar:not(.expanded) .nav-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* ============================================== */
+/* PERFIL NO FOOTER                               */
+/* ============================================== */
+
+.sidebar-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    margin-top: auto;
+    position: relative;
+    background: rgb(236, 236, 236);
+}
+
+.profile-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    position: relative;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.profile-avatar-small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #ff0000 0%, #580000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.profile-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-iniciais-small {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-details {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.profile-name-small {
+    font-weight: 600;
+    color: rgb(63, 63, 63);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-role-small {
+    color: rgba(63, 63, 63, 0.7);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botão de ações (3 pontos) */
+.actions-toggle {
+    background: none;
+    border: none;
+    color: rgba(68, 68, 68, 0.7);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: 0.2s ease;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1001;
+}
+
+.actions-toggle:hover {
+    color: rgb(46, 46, 46);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+
+/* Sidebar retraída - ajustes */
+.sidebar:not(.expanded) .profile-details,
+.sidebar:not(.expanded) .actions-toggle {
+    display: none;
+}
+
+.sidebar:not(.expanded) .profile-container {
+    justify-content: center;
+    margin: 5px 0;
+}
+
+.sidebar:not(.expanded) .profile-avatar-small {
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+}
+
+/* Tooltip para avatar quando sidebar retraída */
+.sidebar:not(.expanded) .profile-avatar-small {
+    position: relative;
+}
+
+.sidebar:not(.expanded) .profile-avatar-small:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* ============================================== */
+/* OVERLAY E MOBILE                               */
+/* ============================================== */
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================== */
+/* RESPONSIVIDADE                                 */
+/* ============================================== */
+
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .mobile-menu-btn {
+        display: flex;
+    }
+    
+    .sidebar-logo-toggle {
+        display: flex;
+    }
+}
+
+/* ============================================== */
+/* TOOLTIPS PARA SIDEBAR RETRAÍDA                 */
+/* ============================================== */
+
+.sidebar:not(.expanded) .nav-link {
+    position: relative;
+}
+
+.sidebar:not(.expanded) .nav-link:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* ============================================== */
+/* MELHORIAS E CORREÇÕES                          */
+/* ============================================== */
+
+/* Remover animações de debug */
+.actions-dropdown.show {
+    animation: none !important;
+    border: 1px solid #e1e1e1 !important;
+}
+
+/* Garantir que o dropdown não seja afetado por outros estilos */
+.actions-dropdown * {
+    box-sizing: border-box;
+}
+
+/* Melhorar acessibilidade do foco */
+.nav-link:focus,
+.actions-toggle:focus,
+.dropdown-item:focus {
+    outline: 1px solid #9797977e;
+    background-color: rgba(0, 0, 0, 0.3);
+    outline-offset: 2px;
+}
+
+/* Scrollbar personalizada */
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* ==============================================
+   DROPDOWN - ESTILOS FIXOS E SIMPLES
+   ============================================== */
+
+/* Container do dropdown */
+.actions-dropdown {
+    position: fixed !important;
+    bottom: 90px !important;
+    right: 25px !important;
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+    width: 200px !important;
+    min-height: auto !important;
+    z-index: 1000000 !important; /* Z-INDEX ALTÍSSIMO */
+    display: none !important; /* Inicialmente oculto */
+    padding: 8px 0 !important;
+    font-family: inherit !important;
+    overflow: visible !important;
+}
+
+/* Quando mostrar */
+.actions-dropdown.show {
+    display: block !important;
+    animation: dropdownSlideIn 0.2s ease-out !important;
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Quando a sidebar estiver expandida: posicionar o dropdown ao lado do footer/profile sem causar overflow */
+.sidebar.expanded .actions-dropdown {
+    position: fixed !important; /* fixo na viewport - evita overflow horizontal */
+    left: calc(250px + 8px) !important; /* 250px = largura da sidebar expanded + gap */
+    bottom: 90px !important; /* alinhado verticalmente próximo ao footer/profile */
+    transform: none !important;
+    right: auto !important;
+    top: auto !important;
+    z-index: 10000002 !important; /* garantir que fique acima de tudo */
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+}
+
+/* Responsivo: em telas pequenas, manter o comportamento fixed (bottom-right) */
+@media (max-width: 992px) {
+    .actions-dropdown {
+        position: fixed !important;
+        right: 25px !important;
+        bottom: 90px !important;
+        left: auto !important;
+        top: auto !important;
+        transform: none !important;
+    }
+}
+
+/* Itens do dropdown */
+.dropdown-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 16px !important;
+    color: #333 !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    transition: 0.2s ease !important;
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+    text-align: left !important;
+    cursor: pointer !important;
+}
+
+.dropdown-item:hover {
+    background-color: #f7fafc !important;
+}
+
+.dropdown-item i {
+    width: 20px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+}
+
+.dropdown-divider {
+    height: 1px !important;
+    background-color: #e2e8f0 !important;
+    margin: 4px 0 !important;
+    border: none !important;
+}
+
+/* Logout com cor diferente */
+.logout-item {
+    color: #e53e3e !important;
+}
+
+.logout-item:hover {
+    background-color: #fff5f5 !important;
+}
+
+/* Botão de toggle */
+.actions-toggle {
+    background: none !important;
+    border: none !important;
+    color: rgba(68, 68, 68, 0.7) !important;
+    cursor: pointer !important;
+    padding: 0.5rem !important;
+    border-radius: 4px !important;
+    transition: 0.2s ease !important;
+    flex-shrink: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    z-index: 1000001 !important; /* Acima do dropdown */
+}
+
+.actions-toggle:hover {
+    color: rgb(46, 46, 46) !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Ajuste quando sidebar está retraída */
+.sidebar:not(.expanded) .actions-toggle {
+    display: none !important; /* Esconder quando sidebar retraída */
+}
+
+/* Ajuste quando sidebar está expandida */
+.sidebar.expanded .actions-toggle {
+    display: flex !important; /* Mostrar quando sidebar expandida */
+}
+/* ============================================== */
+/* CONTROLE DE ANIMAÇÕES                          */
+/* ============================================== */
+
+/* 1. Desabilita TODAS as animações durante o carregamento */
+body:not(.animations-ready) .sidebar,
+body:not(.animations-ready) .sidebar * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* 2. Animação SOMENTE para expandir/retrair a sidebar */
+.sidebar.animating {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.sidebar:not(.animating) {
+    transition: none !important;
+}
+
+/* 3. Remove animações das logos */
+.logo-container {
+    transition: none !important;
+}
+
+.sidebar-logo-toggle {
+    transition: none !important;
+}
+
+/* 4. Remove animações do texto dos links */
+.nav-text {
+    transition: opacity 0.15s ease !important;
+    /* Mantém apenas opacity para transição suave do texto */
+}
+
+/* 5. Remove animações dos estados hover (só efeito visual, sem transição) */
+.nav-link {
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+    /* Apenas cores, sem transform ou opacity */
+}
+
+/* 6. Remove keyframes desnecessários */
+@keyframes fadeInLogo {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInSmall {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 7. Remove transform das logos */
+.logo-small,
+.logo-full {
+    transform: none !important;
+    animation: none !important;
+}
+
+/* 8. Só anima quando a sidebar estiver expandindo/retraindo */
+.sidebar.animating .nav-text {
+    transition: opacity 0.3s ease !important;
+}
+
+/* 9. Overlay sem animação inicial */
+.sidebar-overlay {
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+}
+
+/* 2. Animação SOMENTE para expandir/retrair a sidebar */
+.sidebar.animating {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.sidebar:not(.animating) {
+    transition: none !important;
+}
+
+/* 3. Remove animações das logos */
+.logo-container {
+    transition: none !important;
+}
+
+.sidebar-logo-toggle {
+    transition: none !important;
+}
+
+/* 4. Remove animações do texto dos links */
+.nav-text {
+    transition: opacity 0.15s ease !important;
+    /* Mantém apenas opacity para transição suave do texto */
+}
+
+/* 5. Remove animações dos estados hover (só efeito visual, sem transição) */
+.nav-link {
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+    /* Apenas cores, sem transform ou opacity */
+}
+
+/* 6. Remove keyframes desnecessários */
+@keyframes fadeInLogo {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInSmall {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 7. Remove transform das logos */
+.logo-small,
+.logo-full {
+    transform: none !important;
+    animation: none !important;
+}
+
+/* 8. Só anima quando a sidebar estiver expandindo/retraindo */
+.sidebar.animating .nav-text {
+    transition: opacity 0.3s ease !important;
+}
+
+/* 9. Overlay sem animação inicial */
+.sidebar-overlay {
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+}
+
+.profile-avatar-small {
+  cursor: pointer;
+}
+
+.foto-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.foto-preview img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #b90000;
+  background-color: #696969b6;
+}
+
+.modal-content.small {
+  max-width: 360px;
+}
+
+button.full {
+  width: 100%;
+}
