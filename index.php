@@ -250,13 +250,7 @@ if ($conn) {
             <button class="modal-close" onclick="closeModal('modal-dashboard-editor')">&times;</button>
         </div>
         <div class="modal-body">
-            <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-                <input id="editor-layout-name" placeholder="Nome do layout" style="flex:1; padding:8px;" />
-                <label style="display:flex; align-items:center; gap:6px; font-size:14px;">
-                    <input id="editor-layout-shared" type="checkbox" /> <span>Compartilhar</span>
-                </label>
-                <button class="btn btn-outline" onclick="resetToDefault()">Resetar para padrão</button>
-            </div>
+           
             <div class="editor-columns">
                 <div class="editor-left">
                     <h4>Layout atual</h4>
@@ -271,13 +265,13 @@ if ($conn) {
                         <button class="btn btn-outline" data-card-id="card_taxa_fechamento">Taxa de Fechamento</button>
                         <button class="btn btn-outline" data-card-id="card_clientes_inativos">Clientes Inativos</button>
                         <button class="btn btn-outline" data-card-id="card_total_negociacoes">Total de Negociações</button>
-                        <button class="editor-card-btn" data-card-id="card_faturamento_mes">Faturamento do Mês</button>
-                        <button class="editor-card-btn" data-card-id="card_qtd_vendas_mes">Vendas do Mês</button>
-                        <button class="editor-card-btn" data-card-id="card_ticket_medio_mes">Ticket Médio (Mês)</button>
-                        <button class="editor-card-btn" data-card-id="card_clientes_perdidos_60d">Clientes Perdidos (60d)</button>
-                        <button class="editor-card-btn" data-card-id="card_projecao_mes">Projeção do Mês</button>
-                        <button class="editor-card-btn" data-card-id="card_meta_atingida_percent">% da Meta (Mês)</button>
-                        <button class="editor-card-btn" data-card-id="card_necessario_por_dia">Necessário por Dia</button>
+                        <button class="btn btn-outline" data-card-id="card_faturamento_mes">Faturamento do Mês</button>
+                        <button class="btn btn-outline" data-card-id="card_qtd_vendas_mes">Vendas do Mês</button>
+                        <button class="btn btn-outline" data-card-id="card_ticket_medio_mes">Ticket Médio (Mês)</button>
+                        <button class="btn btn-outline" data-card-id="card_clientes_perdidos_60d">Clientes Perdidos (60d)</button>
+                        <button class="btn btn-outline" data-card-id="card_projecao_mes">Projeção do Mês</button>
+                        <button class="btn btn-outline" data-card-id="card_meta_atingida_percent">% da Meta (Mês)</button>
+                        <button class="btn btn-outline" data-card-id="card_necessario_por_dia">Necessário por Dia</button>
                         <button class="btn btn-outline" data-card-id="card_grafico_exemplo">Gráfico (6 meses)</button>
                     </div>
                 </div>
@@ -315,11 +309,10 @@ if ($conn) {
     /* Dashboard editor styles */
     .editor-columns {
         display: flex;
-        gap: 16px;
+        gap: 36px;
+        padding: 24px 38px;
     }
-    .editor-left, .editor-right {
-        flex: 1;
-    }
+                                    
     .editor-layout-list {
         border: 1px dashed #e2e8f0;
         min-height: 200px;

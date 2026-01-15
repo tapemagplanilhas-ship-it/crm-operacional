@@ -83,7 +83,8 @@ if ($method === 'POST') {
     $id = isset($input['id']) ? intval($input['id']) : null;
 
     if ($id) {
-        // Update (only owner or admin)
+        // Update (only owner or admin). If layout isn't owned by the user,
+        // save as a new layout for this user instead of failing.
         $sql = "SELECT user_id FROM dashboard_layouts WHERE id = ? LIMIT 1";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('i', $id);
@@ -94,17 +95,16 @@ if ($method === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Layout não encontrado']);
             exit;
         }
-        if ($row['user_id'] != $user_id && $perfil !== 'admin') {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Permissão negada']);
+        if ($row['user_id'] == $user_id || $perfil === 'admin') {
+            $sql = "UPDATE dashboard_layouts SET name = ?, layout_json = ?, is_shared = ? WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ssii', $name, $layout_json, $is_shared, $id);
+            $ok = $stmt->execute();
+            echo json_encode(['success' => (bool)$ok]);
             exit;
         }
-        $sql = "UPDATE dashboard_layouts SET name = ?, layout_json = ?, is_shared = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssii', $name, $layout_json, $is_shared, $id);
-        $ok = $stmt->execute();
-        echo json_encode(['success' => (bool)$ok]);
-        exit;
+        // Non-admin editing someone else's layout: fall through to insert.
+        $id = null;
     }
 
     // Insert new layout

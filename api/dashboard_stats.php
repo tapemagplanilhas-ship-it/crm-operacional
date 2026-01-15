@@ -1,360 +1,364 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
+// api/dashboard_stats.php
 header('Content-Type: application/json; charset=utf-8');
+session_start();
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+require_once __DIR__ . '/../includes/config.php';
+
+$conn = getConnection();
+if (!$conn) {
+  echo json_encode(['success' => false, 'message' => 'Sem conexão com o banco']);
+  exit;
 }
 
 $metric = $_GET['metric'] ?? '';
-$conn = getConnection();
+$metric = trim($metric);
 
-if (!$conn) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'DB connection error']);
-    exit;
+if ($metric === '') {
+  echo json_encode(['success' => false, 'message' => 'Métrica não informada']);
+  exit;
 }
 
-// Helper: pega o usuário alvo para métricas "por vendedor"
-function getTargetUserId(): ?int {
-    // prioridade: user_id via GET (para gerência no futuro), senão sessão
-    if (isset($_GET['user_id']) && is_numeric($_GET['user_id'])) return (int)$_GET['user_id'];
-    if (isset($_SESSION['usuario_id']) && is_numeric($_SESSION['usuario_id'])) return (int)$_SESSION['usuario_id'];
-    return null;
+// --- filtro por usuário (vendedor) ---
+$usuarioId = $_SESSION['usuario_id'] ?? null;
+$perfil    = $_SESSION['perfil'] ?? '';
+
+$isVendedor = ($perfil === 'vendedor' && !empty($usuarioId));
+$hasUsuarioIdColumn = false;
+try {
+  $colRes = $conn->query("SHOW COLUMNS FROM vendas LIKE 'usuario_id'");
+  if ($colRes && $colRes->num_rows > 0) $hasUsuarioIdColumn = true;
+} catch (Throwable $e) {
+  $hasUsuarioIdColumn = false;
 }
 
-switch ($metric) {
+if ($isVendedor && !$hasUsuarioIdColumn) {
+  // Sem coluna de usuÃ¡rio nas vendas, nÃ£o filtrar para vendedor.
+  $isVendedor = false;
+}
+$userWhere  = $isVendedor ? " AND v.usuario_id = ? " : "";
+$userParamTypes = $isVendedor ? "i" : "";
+$userParamValues = $isVendedor ? [$usuarioId] : [];
 
-    case 'meta_atingida_percent': {
-        $userId = getTargetUserId();
-        if (!$userId) {
-            echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica meta_atingida_percent']);
-            break;
-        }
-
-        // 1) Meta mensal ativa (faturamento) válida para hoje
-        $sqlMeta = "
-            SELECT valor_meta
-            FROM metas_vendedores
-            WHERE usuario_id = ?
-              AND periodo = 'mensal'
-              AND tipo_meta = 'faturamento'
-              AND ativo = 1
-              AND data_inicio <= CURDATE()
-              AND (data_fim IS NULL OR data_fim >= CURDATE())
-            ORDER BY data_inicio DESC
-            LIMIT 1
-        ";
-        $stmt = $conn->prepare($sqlMeta);
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $resMeta = $stmt->get_result();
-        $rowMeta = $resMeta ? $resMeta->fetch_assoc() : null;
-        $stmt->close();
-
-        $meta = $rowMeta ? (float)$rowMeta['valor_meta'] : 0.0;
-
-        // 2) Faturamento do mês do vendedor
-        $sqlFat = "
-            SELECT COALESCE(SUM(valor),0) AS valor
-            FROM vendas
-            WHERE status = 'concluida'
-              AND usuario_id = ?
-              AND MONTH(data_venda) = MONTH(CURRENT_DATE())
-              AND YEAR(data_venda) = YEAR(CURRENT_DATE())
-        ";
-        $stmt = $conn->prepare($sqlFat);
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $resFat = $stmt->get_result();
-        $rowFat = $resFat ? $resFat->fetch_assoc() : null;
-        $stmt->close();
-
-        $faturamentoMes = $rowFat ? (float)$rowFat['valor'] : 0.0;
-
-        // 3) Percentual
-        $percent = ($meta > 0) ? round(($faturamentoMes / $meta) * 100, 1) : 0.0;
-
-        echo json_encode(['success'=>true,'value'=>$percent]);
-        break;
-    }
-
-    case 'total_clients':
-        $res = $conn->query("SELECT COUNT(*) as total FROM clientes");
-        $row = $res->fetch_assoc();
-        echo json_encode(['success'=>true,'value'=>intval($row['total'])]);
-        break;
-
-    case 'vendas_mes':
-        $res = $conn->query("SELECT COUNT(*) as total FROM vendas WHERE status='concluida' AND MONTH(data_venda)=MONTH(CURRENT_DATE()) AND YEAR(data_venda)=YEAR(CURRENT_DATE())");
-        $row = $res->fetch_assoc();
-        echo json_encode(['success'=>true,'value'=>intval($row['total'])]);
-        break;
-
-    case 'valor_mes':
-        $res = $conn->query("SELECT COALESCE(SUM(valor),0) as valor FROM vendas WHERE status='concluida' AND MONTH(data_venda)=MONTH(CURRENT_DATE()) AND YEAR(data_venda)=YEAR(CURRENT_DATE())");
-        $row = $res->fetch_assoc();
-        echo json_encode(['success'=>true,'value'=>floatval($row['valor'])]);
-        break;
-
-    case 'taxa_fechamento':
-        $res = $conn->query("SELECT COUNT(*) as total, COUNT(CASE WHEN status='concluida' THEN 1 END) as concluidas FROM vendas");
-        $row = $res->fetch_assoc();
-        $total = intval($row['total']);
-        $concl = intval($row['concluidas']);
-        $taxa = $total>0?round(($concl*100)/$total,1):0;
-        echo json_encode(['success'=>true,'value'=>$taxa]);
-        break;
-
-    case 'clientes_inativos':
-        $res = $conn->query("SELECT COUNT(*) as total FROM clientes WHERE ultima_venda IS NULL OR ultima_venda < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)");
-        $row = $res->fetch_assoc();
-        echo json_encode(['success'=>true,'value'=>intval($row['total'])]);
-        break;
-
-    case 'total_negociacoes':
-        $res = $conn->query("SELECT COUNT(*) as total FROM vendas");
-        $row = $res->fetch_assoc();
-        echo json_encode(['success'=>true,'value'=>intval($row['total'])]);
-        break;
-
-    case 'vendas_6meses':
-        $vals = [];
-        for ($i=5;$i>=0;$i--) {
-            $m = date('m', strtotime("-{$i} month"));
-            $y = date('Y', strtotime("-{$i} month"));
-            $res = $conn->query("SELECT COALESCE(SUM(valor),0) as valor FROM vendas WHERE status='concluida' AND MONTH(data_venda)={$m} AND YEAR(data_venda)={$y}");
-            $row = $res->fetch_assoc();
-            $vals[] = floatval($row['valor']);
-        }
-        echo json_encode(['success'=>true,'labels'=>[ '5m','4m','3m','2m','1m','atual' ],'values'=>$vals]);
-        break;
-
-        case 'faturamento_mes': {
-    $userId = getTargetUserId();
-    if (!$userId) {
-        echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica faturamento_mes']);
-        break;
-    }
-
-    $sql = "
-        SELECT COALESCE(SUM(valor),0) AS valor
-        FROM vendas
-        WHERE status='concluida'
-          AND usuario_id = ?
-          AND MONTH(data_venda)=MONTH(CURRENT_DATE())
-          AND YEAR(data_venda)=YEAR(CURRENT_DATE())
-    ";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
-    $stmt->close();
-
-    echo json_encode(['success'=>true,'value'=> (float)($row['valor'] ?? 0)]);
-    break;
+// helpers
+function out_value($value) {
+  echo json_encode(['success' => true, 'value' => $value]);
+  exit;
+}
+function out_chart($labels, $values) {
+  echo json_encode(['success' => true, 'labels' => $labels, 'values' => $values]);
+  exit;
 }
 
-case 'qtd_vendas_mes': {
-    $userId = getTargetUserId();
-    if (!$userId) {
-        echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica qtd_vendas_mes']);
-        break;
+try {
+
+  // =========================
+  // METAS (se você tiver)
+  // =========================
+  // Se você tiver uma tabela metas por vendedor, você pluga aqui.
+  // Por enquanto: meta mensal fixa 0 (ou define um número pra testar).
+  $metaMensal = 0.0;
+
+  // Exemplo rápido pra testar:
+  // $metaMensal = 12000.0;
+
+  switch ($metric) {
+
+    // =========================
+    // MÉTRICAS ANTIGAS
+    // =========================
+    case 'total_clients': {
+      // total de clientes (não depende de vendas)
+      $sql = "SELECT COUNT(*) AS total FROM clientes";
+      $r = $conn->query($sql);
+      $row = $r ? $r->fetch_assoc() : null;
+      out_value((int)($row['total'] ?? 0));
     }
 
-    $sql = "
+    case 'vendas_mes': {
+      // conta vendas do mês (todas) - se quiser só concluídas, adiciona status = 'concluida'
+      $sql = "
         SELECT COUNT(*) AS total
-        FROM vendas
-        WHERE status='concluida'
-          AND usuario_id = ?
-          AND MONTH(data_venda)=MONTH(CURRENT_DATE())
-          AND YEAR(data_venda)=YEAR(CURRENT_DATE())
-    ";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
-    $stmt->close();
-
-    echo json_encode(['success'=>true,'value'=> (int)($row['total'] ?? 0)]);
-    break;
-}
-
-case 'ticket_medio_mes': {
-    $userId = getTargetUserId();
-    if (!$userId) {
-        echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica ticket_medio_mes']);
-        break;
+        FROM vendas v
+        WHERE YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((int)($res['total'] ?? 0));
     }
 
-    $sql = "
-        SELECT 
-          COALESCE(SUM(valor),0) AS total_valor,
-          COUNT(*) AS total_vendas
-        FROM vendas
-        WHERE status='concluida'
-          AND usuario_id = ?
-          AND MONTH(data_venda)=MONTH(CURRENT_DATE())
-          AND YEAR(data_venda)=YEAR(CURRENT_DATE())
-    ";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
-    $stmt->close();
+    case 'valor_mes': {
+      // soma do mês (concluídas)
+      $sql = "
+        SELECT COALESCE(SUM(v.valor),0) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((float)($res['total'] ?? 0));
+    }
 
-    $totalValor = (float)($row['total_valor'] ?? 0);
-    $totalVendas = (int)($row['total_vendas'] ?? 0);
+    case 'taxa_fechamento': {
+      // % concluída no mês (concluida / total)
+      $sql = "
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN v.status='concluida' THEN 1 ELSE 0 END) AS concluidas
+        FROM vendas v
+        WHERE YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
 
-    $ticket = ($totalVendas > 0) ? round($totalValor / $totalVendas, 2) : 0;
+      $total = (int)($res['total'] ?? 0);
+      $ok    = (int)($res['concluidas'] ?? 0);
+      $pct   = $total > 0 ? ($ok / $total) * 100 : 0;
+      out_value(round($pct, 1));
+    }
 
-    echo json_encode(['success'=>true,'value'=>$ticket]);
-    break;
-}
-
-case 'clientes_perdidos_60d': {
-    $sql = "
+    case 'clientes_inativos': {
+      // clientes sem compra concluída nos últimos 30 dias (baseado em ultima_venda)
+      $sql = "
         SELECT COUNT(*) AS total
         FROM clientes
-        WHERE ultima_venda IS NULL
-           OR ultima_venda < DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
-    ";
-    $res = $conn->query($sql);
-    $row = $res ? $res->fetch_assoc() : null;
-
-    echo json_encode(['success'=>true,'value'=>(int)($row['total'] ?? 0)]);
-    break;
-}
-
-case 'projecao_mes': {
-    $userId = getTargetUserId();
-    if (!$userId) {
-        echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica projecao_mes']);
-        break;
+        WHERE (ultima_venda IS NULL OR ultima_venda < DATE_SUB(CURDATE(), INTERVAL 30 DAY))
+      ";
+      $r = $conn->query($sql);
+      $row = $r ? $r->fetch_assoc() : null;
+      out_value((int)($row['total'] ?? 0));
     }
 
-    // 1) Faturamento do mês (vendas concluídas)
-    $sqlFat = "
-        SELECT COALESCE(SUM(valor),0) AS valor
-        FROM vendas
-        WHERE status='concluida'
-          AND usuario_id = ?
-          AND MONTH(data_venda)=MONTH(CURRENT_DATE())
-          AND YEAR(data_venda)=YEAR(CURRENT_DATE())
-    ";
-    $stmt = $conn->prepare($sqlFat);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $rowFat = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+    case 'total_negociacoes': {
+      // total de vendas (qualquer status) no mês
+      $sql = "
+        SELECT COUNT(*) AS total
+        FROM vendas v
+        WHERE YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((int)($res['total'] ?? 0));
+    }
 
-    $faturamentoMes = (float)($rowFat['valor'] ?? 0);
-
-    // 2) Dias úteis passados (inclui hoje) e total de dias úteis do mês
-    $sqlDias = "
+    case 'vendas_6meses': {
+      // gráfico: soma de concluídas por mês (últimos 6 meses)
+      $sql = "
         SELECT
-          SUM(CASE WHEN data BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
-                   THEN dia_util ELSE 0 END) AS dias_uteis_passados,
-          SUM(CASE WHEN data BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND LAST_DAY(CURDATE())
-                   THEN dia_util ELSE 0 END) AS dias_uteis_mes
-        FROM calendario_uteis
-        WHERE data BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND LAST_DAY(CURDATE())
-    ";
-    $resDias = $conn->query($sqlDias);
-    $rowDias = $resDias ? $resDias->fetch_assoc() : null;
+          DATE_FORMAT(v.data_venda, '%m/%Y') AS mes,
+          COALESCE(SUM(CASE WHEN v.status='concluida' THEN v.valor ELSE 0 END),0) AS total
+        FROM vendas v
+        WHERE v.data_venda >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+          $userWhere
+        GROUP BY YEAR(v.data_venda), MONTH(v.data_venda)
+        ORDER BY YEAR(v.data_venda), MONTH(v.data_venda)
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $rs = $stmt->get_result();
 
-    $diasPassados = (int)($rowDias['dias_uteis_passados'] ?? 0);
-    $diasMes = (int)($rowDias['dias_uteis_mes'] ?? 0);
+      $labels = [];
+      $values = [];
+      while ($row = $rs->fetch_assoc()) {
+        $labels[] = $row['mes'];
+        $values[] = (float)$row['total'];
+      }
 
-    // 3) Projeção
-    $mediaDiaria = ($diasPassados > 0) ? ($faturamentoMes / $diasPassados) : 0;
-    $projecao = ($diasMes > 0) ? round($mediaDiaria * $diasMes, 2) : 0;
-
-    echo json_encode(['success'=>true,'value'=>$projecao]);
-    break;
-}
-
-case 'necessario_por_dia': {
-    $userId = getTargetUserId();
-    if (!$userId) {
-        echo json_encode(['success'=>false,'message'=>'Usuário não identificado para métrica necessario_por_dia']);
-        break;
+      out_chart($labels, $values);
     }
 
-    // 1) Meta mensal ativa
-    $sqlMeta = "
-        SELECT valor_meta
-        FROM metas_vendedores
-        WHERE usuario_id = ?
-          AND periodo = 'mensal'
-          AND tipo_meta = 'faturamento'
-          AND ativo = 1
-          AND data_inicio <= CURDATE()
-          AND (data_fim IS NULL OR data_fim >= CURDATE())
-        ORDER BY data_inicio DESC
-        LIMIT 1
-    ";
-    $stmt = $conn->prepare($sqlMeta);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $rowMeta = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    $meta = (float)($rowMeta['valor_meta'] ?? 0);
+    // =========================
+    // MÉTRICAS NOVAS
+    // =========================
 
-    if ($meta <= 0) {
-        echo json_encode(['success'=>true,'value'=>0]);
-        break;
+    case 'faturamento_mes': {
+      // igual valor_mes (concluídas)
+      $sql = "
+        SELECT COALESCE(SUM(v.valor),0) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((float)($res['total'] ?? 0));
     }
 
-    // 2) Faturamento do mês (concluídas)
-    $sqlFat = "
-        SELECT COALESCE(SUM(valor),0) AS valor
-        FROM vendas
-        WHERE status='concluida'
-          AND usuario_id = ?
-          AND MONTH(data_venda)=MONTH(CURRENT_DATE())
-          AND YEAR(data_venda)=YEAR(CURRENT_DATE())
-    ";
-    $stmt = $conn->prepare($sqlFat);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $rowFat = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    $faturamentoMes = (float)($rowFat['valor'] ?? 0);
-
-    $faltante = $meta - $faturamentoMes;
-    if ($faltante <= 0) {
-        echo json_encode(['success'=>true,'value'=>0]);
-        break;
+    case 'qtd_vendas_mes': {
+      $sql = "
+        SELECT COUNT(*) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((int)($res['total'] ?? 0));
     }
 
-    // 3) Dias úteis restantes (a partir de amanhã até fim do mês)
-    $sqlRestantes = "
-        SELECT SUM(dia_util) AS dias_uteis_restantes
-        FROM calendario_uteis
-        WHERE data > CURDATE()
-          AND data <= LAST_DAY(CURDATE())
-    ";
-    $res = $conn->query($sqlRestantes);
-    $row = $res ? $res->fetch_assoc() : null;
-    $diasRestantes = (int)($row['dias_uteis_restantes'] ?? 0);
-
-    if ($diasRestantes <= 0) {
-        echo json_encode(['success'=>true,'value'=>0]);
-        break;
+    case 'ticket_medio_mes': {
+      $sql = "
+        SELECT COALESCE(AVG(v.valor),0) AS avg_val
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+      out_value((float)($res['avg_val'] ?? 0));
     }
 
-    $necessario = round($faltante / $diasRestantes, 2);
-    echo json_encode(['success'=>true,'value'=>$necessario]);
-    break;
-}
+    case 'clientes_perdidos_60d': {
+      // clientes sem venda concluída há 60 dias
+      // (se for vendedor, considera clientes que já tiveram venda desse vendedor)
+      if ($isVendedor) {
+        $sql = "
+          SELECT COUNT(DISTINCT c.id) AS total
+          FROM clientes c
+          JOIN vendas v ON v.cliente_id = c.id
+          WHERE v.usuario_id = ?
+          GROUP BY v.usuario_id
+        ";
+        // Para “perdidos 60d” por vendedor de verdade, usa última venda concluída dele:
+        $sql = "
+          SELECT COUNT(*) AS total
+          FROM (
+            SELECT c.id,
+                   MAX(CASE WHEN v.status='concluida' THEN v.data_venda ELSE NULL END) AS ultima_concluida
+            FROM clientes c
+            JOIN vendas v ON v.cliente_id = c.id
+            WHERE v.usuario_id = ?
+            GROUP BY c.id
+          ) x
+          WHERE (x.ultima_concluida IS NULL OR x.ultima_concluida < DATE_SUB(CURDATE(), INTERVAL 60 DAY))
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $usuarioId);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        out_value((int)($res['total'] ?? 0));
+      } else {
+        $sql = "
+          SELECT COUNT(*) AS total
+          FROM clientes
+          WHERE (ultima_venda IS NULL OR ultima_venda < DATE_SUB(CURDATE(), INTERVAL 60 DAY))
+        ";
+        $r = $conn->query($sql);
+        $row = $r ? $r->fetch_assoc() : null;
+        out_value((int)($row['total'] ?? 0));
+      }
+    }
 
-        
+    case 'projecao_mes': {
+      // projeção simples: (faturamento até hoje / dia do mês) * total dias do mês
+      $sql = "
+        SELECT COALESCE(SUM(v.valor),0) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          AND v.data_venda <= CURDATE()
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+
+      $totalAteHoje = (float)($res['total'] ?? 0);
+      $diaAtual = (int)date('j');
+      $diasNoMes = (int)date('t');
+
+      $proj = ($diaAtual > 0) ? ($totalAteHoje / $diaAtual) * $diasNoMes : 0;
+      out_value((float)$proj);
+    }
+
+    case 'meta_atingida_percent': {
+      // se metaMensal for 0, retorna 0 pra não dividir por zero
+      if ($metaMensal <= 0) out_value(0);
+
+      // faturamento atual
+      $sql = "
+        SELECT COALESCE(SUM(v.valor),0) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+
+      $fat = (float)($res['total'] ?? 0);
+      $pct = ($metaMensal > 0) ? ($fat / $metaMensal) * 100 : 0;
+      out_value(round($pct, 1));
+    }
+
+    case 'necessario_por_dia': {
+      // necessário por dia até o fim do mês (simples: dias restantes corridos)
+      if ($metaMensal <= 0) out_value(0);
+
+      $sql = "
+        SELECT COALESCE(SUM(v.valor),0) AS total
+        FROM vendas v
+        WHERE v.status='concluida'
+          AND YEAR(v.data_venda)=YEAR(CURDATE())
+          AND MONTH(v.data_venda)=MONTH(CURDATE())
+          $userWhere
+      ";
+      $stmt = $conn->prepare($sql);
+      if ($isVendedor) $stmt->bind_param($userParamTypes, ...$userParamValues);
+      $stmt->execute();
+      $res = $stmt->get_result()->fetch_assoc();
+
+      $fat = (float)($res['total'] ?? 0);
+      $faltam = max(0.0, $metaMensal - $fat);
+
+      $diaAtual = (int)date('j');
+      $diasNoMes = (int)date('t');
+      $diasRestantes = max(1, $diasNoMes - $diaAtual);
+
+      out_value($faltam / $diasRestantes);
+    }
+
     default:
-        echo json_encode(['success'=>false,'message'=>'Métrica não encontrada']);
-}
+      echo json_encode(['success' => false, 'message' => 'Métrica não implementada: ' . $metric]);
+      exit;
+  }
 
-$conn->close();
+} catch (Throwable $e) {
+  echo json_encode(['success' => false, 'message' => 'Erro: ' . $e->getMessage()]);
+  exit;
+}
