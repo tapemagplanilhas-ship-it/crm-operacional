@@ -301,8 +301,7 @@ function renderDashboardFromLayout(layout) {
         el.appendChild(content);
 
         container.appendChild(el);
-    });
-    
+   
         // load data
         if (card.type === 'stat' && card.metric) {
             fetch('api/dashboard_stats.php?metric=' + encodeURIComponent(card.metric))
@@ -336,9 +335,6 @@ function renderDashboardFromLayout(layout) {
 
                 });
         } else if (card.type === 'chart') {
-    // GRÁFICOS DESATIVADOS TEMPORARIAMENTE PARA DEBUG
-    console.warn('📊 Gráfico desativado:', card.metric);
-    };
 }
 
 
@@ -1430,3 +1426,4 @@ async function registrarVenda(event) {
         btnSubmit.innerHTML = '<i class="fas fa-check"></i> Registrar Negociação';
     }
 }
+})};
