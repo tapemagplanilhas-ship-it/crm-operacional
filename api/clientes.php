@@ -6,9 +6,21 @@ require_once '../includes/config.php';
 
 $response = ['success' => false, 'message' => ''];
 
+$usuarioId = null;
+if (function_exists('iniciarSessao')) {
+    iniciarSessao();
+    $usuarioId = $_SESSION['usuario_id'] ?? null;
+}
+
 $conn = getConnection();
 if (!$conn) {
     $response['message'] = 'Erro de conexão com o banco';
+    echo json_encode($response);
+    exit;
+}
+
+if (empty($usuarioId)) {
+    $response['message'] = 'Usuario nao autenticado';
     echo json_encode($response);
     exit;
 }
@@ -21,8 +33,8 @@ switch ($method) {
         
         if (isset($_GET['id'])) {
             $id = cleanData($_GET['id']);
-            $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
-            $stmt->bind_param("i", $id);
+            $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ? AND usuario_id = ?");
+            $stmt->bind_param("ii", $id, $usuarioId);
             $stmt->execute();
             $result = $stmt->get_result();
             
@@ -33,8 +45,11 @@ switch ($method) {
                 $response['message'] = 'Cliente não encontrado';
             }
         } else {
-            $result = $conn->query("SELECT * FROM clientes ORDER BY nome");
-            
+            $stmt = $conn->prepare("SELECT * FROM clientes WHERE usuario_id = ? ORDER BY nome");
+            $stmt->bind_param("i", $usuarioId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
             while ($row = $result->fetch_assoc()) {
                 $response['data'][] = $row;
             }
@@ -51,6 +66,8 @@ switch ($method) {
         
         $id = $data['id'] ?? null;
         $nome = cleanData($data['nome'] ?? '');
+        $empresa = cleanData($data['empresa'] ?? '');
+        $documento = cleanData($data['documento'] ?? '');
         $telefone = cleanData($data['telefone'] ?? '');
         $email = cleanData($data['email'] ?? '');
         $observacoes = cleanData($data['observacoes'] ?? '');
@@ -62,20 +79,24 @@ switch ($method) {
         
         if ($id) {
             // Atualizar
-            $stmt = $conn->prepare("UPDATE clientes SET nome=?, telefone=?, email=?, observacoes=? WHERE id=?");
-            $stmt->bind_param("ssssi", $nome, $telefone, $email, $observacoes, $id);
+            $stmt = $conn->prepare("UPDATE clientes SET nome=?, empresa=?, documento=?, telefone=?, email=?, observacoes=? WHERE id=? AND usuario_id=?");
+            $stmt->bind_param("ssssssii", $nome, $empresa, $documento, $telefone, $email, $observacoes, $id, $usuarioId);
         } else {
             // Inserir
-            $stmt = $conn->prepare("INSERT INTO clientes (nome, telefone, email, observacoes) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("ssss", $nome, $telefone, $email, $observacoes);
+            $stmt = $conn->prepare("INSERT INTO clientes (nome, empresa, documento, telefone, email, observacoes, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssssi", $nome, $empresa, $documento, $telefone, $email, $observacoes, $usuarioId);
         }
         
         if ($stmt->execute()) {
+            if ($id && $stmt->affected_rows === 0) {
+                $response['message'] = 'VocÃª nÃ£o tem permissÃ£o para editar este cliente';
+                break;
+            }
             $clienteId = $id ?: $conn->insert_id;
             
             // Buscar cliente salvo
-            $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
-            $stmt->bind_param("i", $clienteId);
+            $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ? AND usuario_id = ?");
+            $stmt->bind_param("ii", $clienteId, $usuarioId);
             $stmt->execute();
             $result = $stmt->get_result();
             $response['data'] = $result->fetch_assoc();
@@ -90,7 +111,17 @@ switch ($method) {
     case 'DELETE':
         if (isset($_GET['id'])) {
             $id = cleanData($_GET['id']);
-            
+
+            // Verificar dono
+            $stmt = $conn->prepare("SELECT id FROM clientes WHERE id = ? AND usuario_id = ?");
+            $stmt->bind_param("ii", $id, $usuarioId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if (!$result->fetch_assoc()) {
+                $response['message'] = 'VocÃª nÃ£o tem permissÃ£o para excluir este cliente';
+                break;
+            }
+
             // Verificar vendas
             $stmt = $conn->prepare("SELECT COUNT(*) as total FROM vendas WHERE cliente_id = ?");
             $stmt->bind_param("i", $id);

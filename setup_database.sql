@@ -12,6 +12,8 @@ USE `crm_operacional`;
 CREATE TABLE IF NOT EXISTS `clientes` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `nome` VARCHAR(100) NOT NULL,
+    `empresa` VARCHAR(150) DEFAULT NULL,
+    `documento` VARCHAR(30) DEFAULT NULL,
     `telefone` VARCHAR(20),
     `email` VARCHAR(100),
     `data_cadastro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -25,6 +27,23 @@ CREATE TABLE IF NOT EXISTS `clientes` (
     INDEX `idx_ultima_venda` (`ultima_venda` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 2.1 Tabela de motivos da perda
+CREATE TABLE IF NOT EXISTS `motivos_perda` (
+    `id` INT PRIMARY KEY AUTO_INCREMENT,
+    `nome` VARCHAR(100) NOT NULL,
+    `permite_outro` TINYINT(1) NOT NULL DEFAULT 0,
+    `ordem` INT NOT NULL DEFAULT 0,
+    `ativo` TINYINT(1) NOT NULL DEFAULT 1,
+    UNIQUE KEY `uniq_nome` (`nome`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `motivos_perda` (`nome`, `permite_outro`, `ordem`) VALUES
+('PreÃ§o fora do orÃ§amento', 0, 1),
+('Prazo de entrega', 0, 2),
+('Sem estoque', 0, 3),
+('Pagamento incompatÃ­vel', 0, 4),
+('Outro', 1, 99);
+
 -- 3. Tabela de vendas
 CREATE TABLE IF NOT EXISTS `vendas` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -34,10 +53,15 @@ CREATE TABLE IF NOT EXISTS `vendas` (
     `status` ENUM('concluida', 'cancelada', 'orcamento') NOT NULL DEFAULT 'concluida',
     `observacoes` TEXT,
     `data_registro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `codigo_orcamento` VARCHAR(30) DEFAULT NULL,
+    `motivo_perda_id` INT DEFAULT NULL,
+    `motivo_perda_outro` VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (`cliente_id`) REFERENCES `clientes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`motivo_perda_id`) REFERENCES `motivos_perda`(`id`) ON DELETE SET NULL,
     INDEX `idx_cliente_id` (`cliente_id`),
     INDEX `idx_data_venda` (`data_venda` DESC),
-    INDEX `idx_status` (`status`)
+    INDEX `idx_status` (`status`),
+    INDEX `idx_motivo_perda_id` (`motivo_perda_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 4. Inserir dados de exemplo para testes

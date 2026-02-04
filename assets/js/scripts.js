@@ -24,6 +24,9 @@
   // ===============================
   let clienteOriginal = {};
   let sugestoesAtivas = false;
+  let currentClienteDetalhesId = null;
+  let vendasClienteCarregadas = false;
+  let currentVendaDetalhesId = null;
 
   let currentDashboardLayout = [];
   let currentLayoutId = null;
@@ -64,11 +67,33 @@
     return `<i class="${escapeHtml(icon)}"></i>`;
   }
 
+  function getDashboardStatsUrl(metric) {
+    const params = new URLSearchParams();
+    params.set('metric', metric);
+    if (window.DASHBOARD_SCOPE === 'all') params.set('scope', 'all');
+    if (window.DASHBOARD_VENDOR_ID) params.set('vendedor_id', window.DASHBOARD_VENDOR_ID);
+    return 'api/dashboard_stats.php?' + params.toString();
+  }
+
   function moneyBR(value) {
     return 'R$ ' + Number(value || 0).toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  function formatarDataBR(isoDate) {
+    if (!isoDate || isoDate === '0000-00-00') return '-';
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return isoDate;
+    return date.toLocaleDateString('pt-BR');
+  }
+
+  function formatarDataHoraBR(isoDate) {
+    if (!isoDate || isoDate === '0000-00-00') return '-';
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return isoDate;
+    return date.toLocaleString('pt-BR');
   }
 
   function formatarDataParaInput(dateObj) {
@@ -105,6 +130,91 @@
     input.value = 'R$ ' + valor;
   }
 
+  function limparNaoNumericos(input) {
+    if (!input) return;
+    const onlyDigits = String(input.value || '').replace(/\D+/g, '');
+    input.value = onlyDigits;
+  }
+
+  function obterMotivoPerda(selectId, outroId) {
+    const select = document.getElementById(selectId);
+    if (!select) return '';
+    const valor = (select.value || '').trim();
+    if (!valor) return '';
+    const permiteOutro = select.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    if (permiteOutro) {
+      const outro = document.getElementById(outroId);
+      return (outro?.value || '').trim();
+    }
+    return valor;
+  }
+
+  function obterMotivoPerdaPayload(selectId, outroId) {
+    const select = document.getElementById(selectId);
+    if (!select) return { motivoId: '', motivoOutro: '' };
+    const motivoId = (select.value || '').trim();
+    const permiteOutro = select.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    const motivoOutro = permiteOutro ? (document.getElementById(outroId)?.value || '').trim() : '';
+    return { motivoId, motivoOutro };
+  }
+
+  async function carregarMotivosPerda() {
+    try {
+      const resp = await fetch('api/motivos_perda.php', { credentials: 'same-origin' });
+      const data = await resp.json();
+      if (!data?.success || !Array.isArray(data.data)) return;
+
+      // De-duplicar por nome + permite_outro (evita opÃ§Ãµes repetidas no select)
+      const seen = new Set();
+      const unique = [];
+      data.data.forEach((m) => {
+        const nomeKey = String(m.nome || '').trim().toLowerCase();
+        const key = `${nomeKey}__${Number(m.permite_outro) === 1 ? 1 : 0}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push(m);
+      });
+
+      window.motivosPerda = unique;
+      const ids = [
+        'venda-motivo-perda-select',
+        'venda-rapida-motivo-perda-select',
+        'editar-motivo-perda-select'
+      ];
+
+      ids.forEach((id) => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        const current = select.value;
+        const currentOpt = select.selectedOptions?.[0];
+        const currentText = currentOpt?.textContent || '';
+        const currentPermiteOutro = currentOpt?.dataset?.permiteOutro || '0';
+        select.innerHTML = '<option value=\"\">Selecione...</option>';
+        window.motivosPerda.forEach((m) => {
+          const opt = document.createElement('option');
+          opt.value = String(m.id);
+          opt.textContent = m.nome;
+          opt.dataset.permiteOutro = Number(m.permite_outro) === 1 ? '1' : '0';
+          select.appendChild(opt);
+        });
+        if (current) {
+          if ([...select.options].some(o => o.value === current)) {
+            select.value = current;
+          } else if (currentText) {
+            const opt = document.createElement('option');
+            opt.value = current;
+            opt.textContent = currentText;
+            opt.dataset.permiteOutro = currentPermiteOutro;
+            select.appendChild(opt);
+            select.value = current;
+          }
+        }
+      });
+    } catch {
+      // silencioso
+    }
+  }
+
   function mostrarToast(mensagem, tipo = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -122,6 +232,87 @@
       toast.style.transform = 'translateY(-20px)';
       setTimeout(() => toast.remove(), 300);
     }, 5000);
+  }
+
+  function setupConfirmModal() {
+    if (window.__confirmModalReady) return;
+    const modal = document.getElementById('modal-confirmacao');
+    if (!modal) return;
+
+    window.__confirmModalReady = true;
+
+    const titleSpan = modal.querySelector('[data-role="titulo"]');
+    const messageEl = modal.querySelector('#modal-confirmacao-mensagem');
+    const btnCancel = modal.querySelector('[data-action="cancelar"]');
+    const btnConfirm = modal.querySelector('[data-action="confirmar"]');
+    const btnClose = modal.querySelector('.modal-close');
+
+    const state = { resolve: null };
+
+    const close = (result) => {
+      if (!modal.classList.contains('active')) return;
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (typeof state.resolve === 'function') {
+        const resolve = state.resolve;
+        state.resolve = null;
+        resolve(result);
+      }
+    };
+
+    const open = (options = {}) => {
+      const {
+        title = 'Confirmar exclusão',
+        message = 'Tem certeza que deseja excluir?',
+        confirmText = 'Confirmar exclusão',
+        cancelText = 'Cancelar'
+      } = options;
+
+      if (titleSpan) titleSpan.textContent = title;
+      if (messageEl) messageEl.textContent = message;
+      if (btnConfirm) btnConfirm.textContent = confirmText;
+      if (btnCancel) btnCancel.textContent = cancelText;
+
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+
+      return new Promise((resolve) => {
+        state.resolve = resolve;
+      });
+    };
+
+    const handleCancel = () => close(false);
+    const handleConfirm = () => close(true);
+
+    if (btnCancel) btnCancel.addEventListener('click', handleCancel);
+    if (btnConfirm) btnConfirm.addEventListener('click', handleConfirm);
+    if (btnClose) btnClose.addEventListener('click', handleCancel);
+
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) handleCancel();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal.classList.contains('active')) {
+        handleCancel();
+      }
+    });
+
+    window.abrirModalConfirmacao = open;
+    window.confirmarExclusao = (message) => open({
+      message: message || 'Tem certeza que deseja excluir?',
+      title: 'Confirmar exclusão',
+      confirmText: 'Confirmar exclusão',
+      cancelText: 'Cancelar'
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupConfirmModal);
+  } else {
+    setupConfirmModal();
   }
 
   async function loadScriptOnce(src) {
@@ -158,6 +349,21 @@
     if (modal) {
       modal.style.display = 'none';
       document.body.style.overflow = 'auto';
+    }
+
+    if (tipo === 'cliente-detalhes') {
+      currentClienteDetalhesId = null;
+      vendasClienteCarregadas = false;
+      const container = document.getElementById('cliente-vendas-container');
+      const list = document.getElementById('cliente-vendas-lista');
+      const btn = document.getElementById('btn-ver-vendas-cliente');
+      if (container) container.style.display = 'none';
+      if (list) list.innerHTML = '';
+      if (btn) btn.innerHTML = '<i class="fas fa-receipt"></i> Ver Vendas';
+    }
+
+    if (tipo === 'venda-detalhes') {
+      currentVendaDetalhesId = null;
     }
 
     if (tipo === 'venda-rapida') {
@@ -199,6 +405,8 @@
 
     clienteOriginal = {
       nome: (document.getElementById('cliente-nome')?.value) || '',
+      empresa: (document.getElementById('cliente-empresa')?.value) || '',
+      documento: (document.getElementById('cliente-documento')?.value) || '',
       telefone: (document.getElementById('cliente-telefone')?.value) || '',
       email: (document.getElementById('cliente-email')?.value) || '',
       observacoes: (document.getElementById('cliente-observacoes')?.value) || ''
@@ -214,6 +422,9 @@
     if (!modal || !form) return;
 
     form.reset();
+    if (!Array.isArray(window.motivosPerda) || !window.motivosPerda.length) {
+      carregarMotivosPerda();
+    }
 
     if (clienteId) {
       const id = document.getElementById('venda-cliente-id');
@@ -228,8 +439,85 @@
     if (vendaData) vendaData.value = formatarDataParaInput(hoje);
     if (vendaStatus) vendaStatus.value = 'concluida';
 
+    mostrarCampoMotivoPerdaVenda();
+
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+  }
+
+  function abrirModalVendaDetalhes(vendaId) {
+    if (!vendaId) return;
+    const modal = document.getElementById('modal-venda-detalhes');
+    if (!modal) return;
+
+    currentVendaDetalhesId = vendaId;
+
+    const setText = (id, value, fallback = '-') => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const v = value === null || value === undefined || value === '' ? fallback : value;
+      el.textContent = v;
+    };
+
+    fetch(`api/venda_detalhes.php?id=${vendaId}`, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data?.success || !data.data) {
+          mostrarToast('Venda não encontrada', 'error');
+          return;
+        }
+
+        const v = data.data;
+
+        setText('detalhe-venda-cliente', v.cliente_nome || 'Cliente nÃ£o encontrado');
+        setText('detalhe-venda-telefone', v.cliente_telefone || 'Sem telefone');
+        setText('detalhe-venda-data', v.data_venda ? formatarDataBR(v.data_venda) : '-');
+        setText('detalhe-venda-valor', moneyBR(v.valor || 0));
+        setText('detalhe-venda-pagamento', v.forma_pagamento || 'N/A');
+        setText('detalhe-venda-registro', v.data_registro ? formatarDataHoraBR(v.data_registro) : '-');
+
+        const statusEl = document.getElementById('detalhe-venda-status');
+        if (statusEl) {
+          statusEl.className = 'status-badge';
+          const status = v.status || '';
+          if (status === 'concluida') statusEl.classList.add('status-concluida');
+          if (status === 'perdida') statusEl.classList.add('status-perdida');
+          if (status === 'orcamento') statusEl.classList.add('status-orcamento');
+          statusEl.textContent = status ? status.toUpperCase() : '-';
+        }
+
+        const blocoCodigo = document.getElementById('bloco-codigo-orcamento');
+        const codigo = String(v.codigo_orcamento || '').trim();
+        if (blocoCodigo) blocoCodigo.style.display = codigo ? 'grid' : 'none';
+        setText('detalhe-venda-codigo-orcamento', codigo || '-', '-');
+
+        const blocoVendedor = document.getElementById('bloco-vendedor');
+        const vendedor = String(v.vendedor_nome || '').trim();
+        if (blocoVendedor) blocoVendedor.style.display = vendedor ? 'block' : 'none';
+        setText('detalhe-venda-vendedor', vendedor || '-', '-');
+
+        const blocoMotivo = document.getElementById('bloco-motivo-perda');
+        const motivo = v.motivo_perda || '';
+        if (blocoMotivo) blocoMotivo.style.display = motivo ? 'block' : 'none';
+        setText('detalhe-venda-motivo-perda', motivo || '-', '-');
+
+        const obs = v.observacoes && String(v.observacoes).trim() ? v.observacoes : 'Sem observações';
+        setText('detalhe-venda-observacoes', obs);
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      })
+      .catch(() => mostrarToast('Erro ao carregar venda', 'error'));
+  }
+
+  function editarVendaDetalhes() {
+    if (!currentVendaDetalhesId) return;
+    if (typeof window.editarVenda === 'function') {
+      fecharModal('venda-detalhes');
+      setTimeout(() => window.editarVenda(currentVendaDetalhesId), 100);
+    } else {
+      mostrarToast('EdiÃ§Ã£o nÃ£o disponÃ­vel aqui', 'info');
+    }
   }
 
   function abrirModalVendaRapida() {
@@ -238,6 +526,9 @@
     if (!modal || !form) return;
 
     form.reset();
+    if (!Array.isArray(window.motivosPerda) || !window.motivosPerda.length) {
+      carregarMotivosPerda();
+    }
 
     const sug = document.getElementById('clientes-sugestoes');
     const clienteId = document.getElementById('venda-rapida-cliente-id');
@@ -255,7 +546,225 @@
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
+    mostrarCampoMotivoPerda();
+
     setTimeout(() => document.getElementById('venda-rapida-cliente')?.focus(), 100);
+  }
+
+  function abrirModalClienteDetalhes(clienteId) {
+    if (!clienteId) return;
+
+    const modal = document.getElementById('modal-cliente-detalhes');
+    if (!modal) return;
+
+    currentClienteDetalhesId = clienteId;
+    vendasClienteCarregadas = false;
+
+    const container = document.getElementById('cliente-vendas-container');
+    const list = document.getElementById('cliente-vendas-lista');
+    const btn = document.getElementById('btn-ver-vendas-cliente');
+    if (container) container.style.display = 'none';
+    if (list) list.innerHTML = '';
+    if (btn) btn.innerHTML = '<i class="fas fa-receipt"></i> Ver Vendas';
+
+    fetch(`api/clientes.php?id=${clienteId}`, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data?.success || !data.data) {
+          mostrarToast('Cliente não encontrado', 'error');
+          return;
+        }
+
+        const c = data.data;
+
+        const setText = (id, value, fallback = '-') => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const v = value === null || value === undefined || value === '' ? fallback : value;
+          el.textContent = v;
+        };
+
+        setText('detalhe-cliente-nome', c.nome, '-');
+        setText('detalhe-cliente-empresa', c.empresa, 'Sem empresa');
+        setText('detalhe-cliente-documento', c.documento, 'Não informado');
+        setText('detalhe-cliente-telefone', c.telefone, 'Não informado');
+        setText('detalhe-cliente-email', c.email, 'Não informado');
+        setText('detalhe-cliente-data', c.data_cadastro ? formatarDataBR(c.data_cadastro) : '-');
+
+        const obs = c.observacoes && String(c.observacoes).trim() ? c.observacoes : 'Sem observações';
+        setText('detalhe-cliente-observacoes', obs);
+
+        setText('detalhe-cliente-ultima-venda', c.ultima_venda ? formatarDataBR(c.ultima_venda) : 'Nunca');
+        setText('detalhe-cliente-media-gastos', moneyBR(c.media_gastos || 0));
+        setText('detalhe-cliente-total-gasto', moneyBR(c.total_gasto || 0));
+        setText('detalhe-cliente-taxa-fechamento', c.taxa_fechamento ? `${Number(c.taxa_fechamento).toFixed(1)}%` : '0%');
+
+        const statusEl = document.getElementById('detalhe-cliente-status');
+        if (statusEl) {
+          const status = c.status_cliente || 'novo';
+          const statusMap = {
+            ativo: 'Ativo',
+            recorrente: 'Recorrente',
+            novo: 'Novo',
+            perdido: 'Perdido',
+            inativo: 'Inativo'
+          };
+          statusEl.textContent = statusMap[status] || status;
+          statusEl.className = 'badge';
+          if (status === 'ativo' || status === 'recorrente') statusEl.classList.add('badge-success');
+          else if (status === 'inativo' || status === 'perdido') statusEl.classList.add('badge-danger');
+          else statusEl.classList.add('badge-info');
+        }
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      })
+      .catch(() => mostrarToast('Erro ao carregar cliente', 'error'));
+  }
+
+  async function carregarVendasCliente() {
+    if (!currentClienteDetalhesId) return;
+    const list = document.getElementById('cliente-vendas-lista');
+    const loading = document.getElementById('cliente-vendas-loading');
+
+    if (loading) loading.style.display = 'block';
+    if (list) list.innerHTML = '';
+
+    try {
+      const response = await fetch(`api/vendas.php?cliente_id=${currentClienteDetalhesId}`, { credentials: 'same-origin' });
+      const data = await response.json();
+
+      if (!data?.success) {
+        if (list) list.innerHTML = '<div class="text-center">Erro ao carregar vendas</div>';
+        return;
+      }
+
+      const vendas = Array.isArray(data.data) ? data.data : [];
+      if (!vendas.length) {
+        if (list) list.innerHTML = '<div class="text-center">Nenhuma venda encontrada</div>';
+        return;
+      }
+
+      if (list) {
+        list.innerHTML = vendas.map(v => {
+          const status = v.status_formatado || v.status || '-';
+          const valor = v.valor_formatado || moneyBR(v.valor || 0);
+          const dataVenda = v.data_venda_formatada || formatarDataBR(v.data_venda);
+          const forma = v.forma_pagamento_formatada || v.forma_pagamento || 'N/A';
+          const obs = v.observacoes && String(v.observacoes).trim() ? v.observacoes : '';
+
+          return `
+            <div class="cliente-venda-item">
+              <div class="venda-topo">
+                <strong>${escapeHtml(String(dataVenda))}</strong>
+                <span class="status-badge">${escapeHtml(String(status))}</span>
+              </div>
+              <div class="venda-linha">
+                <span class="label">Valor</span>
+                <span class="value">${escapeHtml(String(valor))}</span>
+              </div>
+              <div class="venda-linha">
+                <span class="label">Forma</span>
+                <span class="value">${escapeHtml(String(forma))}</span>
+              </div>
+              ${obs ? `<div class="venda-obs">${escapeHtml(String(obs))}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+    } catch (e) {
+      if (list) list.innerHTML = '<div class="text-center">Erro ao carregar vendas</div>';
+    } finally {
+      if (loading) loading.style.display = 'none';
+    }
+  }
+
+  window.abrirModalVendaRapida = abrirModalVendaRapida;
+window.openDashboardEditor = openDashboardEditor;
+window.abrirModalCliente = abrirModalCliente;
+
+
+  function toggleVendasCliente() {
+    const container = document.getElementById('cliente-vendas-container');
+    const btn = document.getElementById('btn-ver-vendas-cliente');
+    if (!container) return;
+
+    const isVisible = container.style.display === 'block';
+    if (isVisible) {
+      container.style.display = 'none';
+      if (btn) btn.innerHTML = '<i class="fas fa-receipt"></i> Ver Vendas';
+      return;
+    }
+
+    container.style.display = 'block';
+    if (btn) btn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Vendas';
+
+    if (!vendasClienteCarregadas) {
+      vendasClienteCarregadas = true;
+      carregarVendasCliente();
+    }
+  }
+
+  function editarClienteDetalhes() {
+    if (!currentClienteDetalhesId) return;
+    fecharModal('cliente-detalhes');
+    setTimeout(() => abrirModalCliente(currentClienteDetalhesId), 100);
+  }
+
+  function novaVendaClienteDetalhes() {
+    if (!currentClienteDetalhesId) return;
+    const nome = document.getElementById('detalhe-cliente-nome')?.textContent || '';
+    fecharModal('cliente-detalhes');
+    setTimeout(() => abrirModalVenda(currentClienteDetalhesId, nome), 100);
+  }
+
+  function mostrarCampoMotivoPerda() {
+    const status = document.getElementById('venda-rapida-status')?.value;
+    const campo = document.getElementById('campo-motivo-perda');
+    const select = document.getElementById('venda-rapida-motivo-perda-select');
+    const outroContainer = document.getElementById('venda-rapida-motivo-perda-outro-container');
+    const outroInput = document.getElementById('venda-rapida-motivo-perda-outro');
+    const campoCodigo = document.getElementById('campo-codigo-orcamento-rapida');
+    const inputCodigo = document.getElementById('venda-rapida-codigo-orcamento');
+    const isPerdida = status === 'perdida';
+
+    if (campo) campo.style.display = isPerdida ? 'block' : 'none';
+    if (select) select.required = isPerdida;
+    if (!isPerdida && select) select.value = '';
+
+    const isOutro = isPerdida && select?.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    if (outroContainer) outroContainer.style.display = isOutro ? 'block' : 'none';
+    if (outroInput) {
+      outroInput.required = isOutro;
+      if (!isOutro) outroInput.value = '';
+    }
+
+    if (campoCodigo) campoCodigo.style.display = 'block';
+  }
+
+  function mostrarCampoMotivoPerdaVenda() {
+    const status = document.getElementById('venda-status')?.value;
+    const campoMotivo = document.getElementById('campo-motivo-perda-venda');
+    const select = document.getElementById('venda-motivo-perda-select');
+    const outroContainer = document.getElementById('venda-motivo-perda-outro-container');
+    const outroInput = document.getElementById('venda-motivo-perda-outro');
+    const campoCodigo = document.getElementById('campo-codigo-orcamento');
+    const inputCodigo = document.getElementById('venda-codigo-orcamento');
+
+    const isPerdida = status === 'perdida';
+
+    if (campoMotivo) campoMotivo.style.display = isPerdida ? 'block' : 'none';
+    if (select) select.required = isPerdida;
+    if (!isPerdida && select) select.value = '';
+
+    const isOutro = isPerdida && select?.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    if (outroContainer) outroContainer.style.display = isOutro ? 'block' : 'none';
+    if (outroInput) {
+      outroInput.required = isOutro;
+      if (!isOutro) outroInput.value = '';
+    }
+
+    if (campoCodigo) campoCodigo.style.display = 'block';
   }
 
   // Fechar modal com ESC
@@ -269,21 +778,50 @@
     });
   });
 
-  // Fechar modal clicando fora
+  // Fechar modal somente se o mousedown ocorreu fora do conteÃºdo
+  let modalMouseDownOutside = false;
+  let modalMouseDownId = '';
+
+  document.addEventListener('mousedown', (e) => {
+    const modal = e.target?.closest?.('.modal');
+    if (!modal) {
+      modalMouseDownOutside = false;
+      modalMouseDownId = '';
+      return;
+    }
+    const insideContent = !!e.target.closest('.modal-content');
+    modalMouseDownOutside = !insideContent;
+    modalMouseDownId = modalMouseDownOutside ? modal.id : '';
+  });
+
   document.addEventListener('click', (e) => {
-    if (e.target && e.target.classList && e.target.classList.contains('modal')) {
-      const tipo = e.target.id.replace('modal-', '');
+    if (!modalMouseDownOutside) return;
+    const modal = document.getElementById(modalMouseDownId) || e.target?.closest?.('.modal');
+    if (modal && modal.classList.contains('modal')) {
+      const tipo = modal.id.replace('modal-', '');
       fecharModal(tipo);
     }
+    modalMouseDownOutside = false;
+    modalMouseDownId = '';
   });
 
   // Expor globals (pra onclick no HTML)
   window.abrirModalCliente = abrirModalCliente;
+  window.abrirModalClienteDetalhes = abrirModalClienteDetalhes;
   window.abrirModalVenda = abrirModalVenda;
   window.abrirModalVendaRapida = abrirModalVendaRapida;
+  window.abrirModalVendaDetalhes = abrirModalVendaDetalhes;
   window.fecharModal = fecharModal;
   window.mostrarToast = mostrarToast;
   window.formatarMoeda = formatarMoeda;
+  window.mostrarCampoMotivoPerda = mostrarCampoMotivoPerda;
+  window.mostrarCampoMotivoPerdaVenda = mostrarCampoMotivoPerdaVenda;
+  window.carregarMotivosPerda = carregarMotivosPerda;
+  window.limparNaoNumericos = limparNaoNumericos;
+  window.toggleVendasCliente = toggleVendasCliente;
+  window.editarClienteDetalhes = editarClienteDetalhes;
+  window.novaVendaClienteDetalhes = novaVendaClienteDetalhes;
+  window.editarVendaDetalhes = editarVendaDetalhes;
 
   // ===============================
   // MODAL REMOTO (abrirModal(url))
@@ -374,6 +912,20 @@
       if (typeof layout === 'string') layout = safeJsonParse(layout) || [];
       if (!Array.isArray(layout)) layout = [];
 
+      layout = layout.map((card) => {
+        if (!card || !card.id) return card;
+        const base = createCardById(card.id);
+        if (!base || !base.metric) return card;
+
+        const merged = { ...base, ...card };
+        merged.metric = card.metric || base.metric;
+        merged.title = card.title || base.title;
+        if (merged.title === merged.id) merged.title = base.title;
+        merged.icon = card.icon || base.icon;
+        merged.type = card.type || base.type;
+        return merged;
+      });
+
       currentDashboardLayout = layout;
       renderDashboardFromLayout(currentDashboardLayout);
 
@@ -427,7 +979,7 @@
 
       // carregar dados do card
       if (card.type === 'stat' && card.metric) {
-        fetch('api/dashboard_stats.php?metric=' + encodeURIComponent(card.metric), { credentials: 'same-origin' })
+        fetch(getDashboardStatsUrl(card.metric), { credentials: 'same-origin' })
           .then(r => r.json())
           .then(data => {
             if (!data || data.success !== true) return;
@@ -436,13 +988,20 @@
               'valor_mes',
               'faturamento_mes',
               'ticket_medio_mes',
+              'faturamento_dia',
+              'ticket_medio_dia',
+              'faturamento_semana',
+              'ticket_medio_semana',
               'projecao_mes',
+              'meta_mes',
+              'meta_dia',
               'necessario_por_dia'
             ]);
 
             const percentMetrics = new Set([
               'taxa_fechamento',
-              'meta_atingida_percent'
+              'meta_atingida_percent',
+              'meta_atingida_percent_dia'
             ]);
 
             if (moneyMetrics.has(card.metric)) {
@@ -475,7 +1034,7 @@
     }
 
     try {
-      const r = await fetch('api/dashboard_stats.php?metric=' + encodeURIComponent(metric), { credentials: 'same-origin' });
+      const r = await fetch(getDashboardStatsUrl(metric), { credentials: 'same-origin' });
       const data = await r.json();
 
       if (!data || data.success !== true) {
@@ -524,10 +1083,19 @@
       card_faturamento_mes: { id: 'card_faturamento_mes', type: 'stat', title: 'Faturamento do Mês', icon: 'fa-solid fa-sack-dollar', metric: 'faturamento_mes' },
       card_qtd_vendas_mes: { id: 'card_qtd_vendas_mes', type: 'stat', title: 'Vendas do Mês', icon: 'fa-solid fa-cart-shopping', metric: 'qtd_vendas_mes' },
       card_ticket_medio_mes: { id: 'card_ticket_medio_mes', type: 'stat', title: 'Ticket Médio (Mês)', icon: 'fa-solid fa-receipt', metric: 'ticket_medio_mes' },
+      card_faturamento_dia: { id: 'card_faturamento_dia', type: 'stat', title: 'Faturamento do Dia', icon: 'fa-solid fa-sack-dollar', metric: 'faturamento_dia' },
+      card_qtd_vendas_dia: { id: 'card_qtd_vendas_dia', type: 'stat', title: 'Vendas do Dia', icon: 'fa-solid fa-cart-shopping', metric: 'qtd_vendas_dia' },
+      card_ticket_medio_dia: { id: 'card_ticket_medio_dia', type: 'stat', title: 'Ticket Médio (Diario)', icon: 'fa-solid fa-receipt', metric: 'ticket_medio_dia' },
+      card_faturamento_semana: { id: 'card_faturamento_semana', type: 'stat', title: 'Faturamento da Semana', icon: 'fa-solid fa-sack-dollar', metric: 'faturamento_semana' },
+      card_qtd_vendas_semana: { id: 'card_qtd_vendas_semana', type: 'stat', title: 'Vendas da Semana', icon: 'fa-solid fa-cart-shopping', metric: 'qtd_vendas_semana' },
+      card_ticket_medio_semana: { id: 'card_ticket_medio_semana', type: 'stat', title: 'Ticket Medio (Semana)', icon: 'fa-solid fa-receipt', metric: 'ticket_medio_semana' },
       card_clientes_perdidos_60d: { id: 'card_clientes_perdidos_60d', type: 'stat', title: 'Clientes Perdidos (60d)', icon: 'fa-solid fa-user-slash', metric: 'clientes_perdidos_60d' },
       card_projecao_mes: { id: 'card_projecao_mes', type: 'stat', title: 'Projeção do Mês', icon: 'fa-solid fa-chart-line', metric: 'projecao_mes' },
       card_meta_atingida_percent: { id: 'card_meta_atingida_percent', type: 'stat', title: '% da Meta (Mês)', icon: 'fa-solid fa-bullseye', metric: 'meta_atingida_percent' },
-      card_necessario_por_dia: { id: 'card_necessario_por_dia', type: 'stat', title: 'Necessário por Dia', icon: 'fa-solid fa-calendar-day', metric: 'necessario_por_dia' },
+      card_meta_mes: { id: 'card_meta_mes', type: 'stat', title: 'Meta do Mês', icon: 'fa-solid fa-flag-checkered', metric: 'meta_mes' },
+      card_meta_dia: { id: 'card_meta_dia', type: 'stat', title: 'Meta do Dia', icon: 'fa-solid fa-calendar-day', metric: 'meta_dia' },
+      card_meta_atingida_percent_dia: { id: 'card_meta_atingida_percent_dia', type: 'stat', title: '% da Meta (Dia)', icon: 'fa-solid fa-percent', metric: 'meta_atingida_percent_dia' },
+      card_necessario_por_dia: { id: 'card_necessario_por_dia', type: 'stat', title: 'Meta Ticket Medio (Dia)', icon: 'fa-solid fa-calendar-day', metric: 'necessario_por_dia' },
 
       card_total_clientes: { id: 'card_total_clientes', type: 'stat', title: 'Total de Clientes', icon: 'fa-solid fa-users', metric: 'total_clients' },
       card_vendas_mes: { id: 'card_vendas_mes', type: 'stat', title: 'Vendas do Mês', icon: 'fa-solid fa-cart-shopping', metric: 'vendas_mes' },
@@ -735,12 +1303,16 @@
 
       document.getElementById('cliente-id').value = cliente.id;
       document.getElementById('cliente-nome').value = cliente.nome || '';
+      document.getElementById('cliente-empresa').value = cliente.empresa || '';
+      document.getElementById('cliente-documento').value = cliente.documento || '';
       document.getElementById('cliente-telefone').value = cliente.telefone || '';
       document.getElementById('cliente-email').value = cliente.email || '';
       document.getElementById('cliente-observacoes').value = cliente.observacoes || '';
 
       clienteOriginal = {
         nome: cliente.nome || '',
+        empresa: cliente.empresa || '',
+        documento: cliente.documento || '',
         telefone: cliente.telefone || '',
         email: cliente.email || '',
         observacoes: cliente.observacoes || ''
@@ -825,6 +1397,16 @@
     if (data.data_venda && !validarData(data.data_venda)) {
       return mostrarToast('Data inválida. Use dd/mm/aaaa', 'error');
     }
+
+    const motivoPayload = obterMotivoPerdaPayload('venda-motivo-perda-select', 'venda-motivo-perda-outro');
+    if (data.status === 'perdida' && !motivoPayload.motivoId) {
+      return mostrarToast('Motivo da perda é obrigatório', 'error');
+    }
+    if (data.status === 'perdida' && !motivoPayload.motivoOutro && document.getElementById('venda-motivo-perda-select')?.selectedOptions?.[0]?.dataset?.permiteOutro === '1') {
+      return mostrarToast('Descreva o motivo da perda', 'error');
+    }
+    data.motivo_perda_id = motivoPayload.motivoId || '';
+    data.motivo_perda_outro = motivoPayload.motivoOutro || '';
 
     const btnSubmit = form.querySelector('button[type="submit"]');
     if (btnSubmit) {
@@ -923,17 +1505,33 @@
     const clienteId = document.getElementById('venda-rapida-cliente-id')?.value;
     const valor = document.getElementById('venda-rapida-valor')?.value;
     const dataVenda = document.getElementById('venda-rapida-data')?.value;
+    const status = document.getElementById('venda-rapida-status')?.value;
+    const formaPagamento = document.getElementById('venda-rapida-forma-pagamento')?.value;
+    const motivoPayload = obterMotivoPerdaPayload('venda-rapida-motivo-perda-select', 'venda-rapida-motivo-perda-outro');
+    const codigoOrcamento = document.getElementById('venda-rapida-codigo-orcamento')?.value;
+    const observacoes = document.getElementById('venda-rapida-observacoes')?.value;
 
     if (!clienteId) return mostrarToast('Selecione um cliente', 'error');
     if (!valor || valor === 'R$ 0,00') return mostrarToast('Valor é obrigatório', 'error');
     if (dataVenda && !validarData(dataVenda)) return mostrarToast('Data inválida. Use dd/mm/aaaa', 'error');
 
+    if (!status) return mostrarToast('Status e obrigatorio', 'error');
+    if (!formaPagamento) return mostrarToast('Forma de pagamento e obrigatoria', 'error');
+    if (status === 'perdida' && !motivoPayload.motivoId) return mostrarToast('Motivo da perda e obrigatorio', 'error');
+    if (status === 'perdida' && !motivoPayload.motivoOutro && document.getElementById('venda-rapida-motivo-perda-select')?.selectedOptions?.[0]?.dataset?.permiteOutro === '1') {
+      return mostrarToast('Descreva o motivo da perda', 'error');
+    }
+
     const payload = {
       cliente_id: clienteId,
       valor: valor,
       data_venda: dataVenda,
-      status: 'concluida',
-      observacoes: 'Venda rápida registrada pelo sistema'
+      status: status,
+      forma_pagamento: formaPagamento,
+      motivo_perda_id: motivoPayload.motivoId || '',
+      motivo_perda_outro: motivoPayload.motivoOutro || '',
+      codigo_orcamento: codigoOrcamento || '',
+      observacoes: observacoes || ''
     };
 
     const btnSubmit = document.querySelector('#form-venda-rapida button[type="submit"]');
@@ -995,10 +1593,27 @@
     sugestoesAtivas = false;
   });
 
+  function bindQuickActionButtons() {
+    const actions = [
+      { selector: '[data-action=\"novo-cliente\"]', handler: abrirModalCliente },
+      { selector: '[data-action=\"venda-rapida\"]', handler: abrirModalVendaRapida },
+      { selector: '[data-action=\"editar-dashboard\"]', handler: openDashboardEditor }
+    ];
+
+    actions.forEach(({ selector, handler }) => {
+      $all(selector).forEach(button => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          handler && handler();
+        });
+      });
+    });
+  }
+
   // ===============================
   // INIT
   // ===============================
-  document.addEventListener('DOMContentLoaded', () => {
+  function initApp() {
     // máscara dinheiro
     $all('.money-input').forEach(input => {
       if (input.value) formatarMoeda(input);
@@ -1013,8 +1628,20 @@
     $('#btn-novo-cliente-action')?.addEventListener('click', (e) => { e.preventDefault(); abrirModalCliente(); });
     $('#btn-venda-rapida-action')?.addEventListener('click', (e) => { e.preventDefault(); abrirModalVendaRapida(); });
 
+    bindQuickActionButtons();
+
     // Carrega dashboard
     loadDashboardLayout();
-  });
+
+    // Carrega motivos de perda
+    carregarMotivosPerda();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
 
 })();
+

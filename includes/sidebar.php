@@ -17,6 +17,13 @@ $paginas = [
         'perfis' => ['admin', 'gerencia', 'vendedor']
     ],
     [
+        'id' => 'dashboard_geral',
+        'nome' => 'Dashboard Geral',
+        'icone' => 'fas fa-tachometer-alt',
+        'url' => 'dashboard_geral.php',
+        'perfis' => ['admin', 'gerencia']
+    ],
+    [
         'id' => 'clientes',
         'nome' => 'Clientes',
         'icone' => 'fas fa-users',
@@ -35,7 +42,7 @@ $paginas = [
         'nome' => 'Relatórios',
         'icone' => 'fas fa-chart-bar',
         'url' => 'relatorios.php',
-        'perfis' => ['admin', 'gerencia']
+        'perfis' => ['admin']
     ],
     [
         'id' => 'usuarios',
@@ -45,12 +52,19 @@ $paginas = [
         'perfis' => ['admin']
     ],
     [
+        'id' => 'gestao',
+        'nome' => 'Gestão',
+        'icone' => 'fas fa-briefcase',
+        'url' => 'gestao.php',
+        'perfis' => ['admin', 'gerencia']
+    ],
+    [
         'id' => 'configuracoes',
         'nome' => 'Configurações',
         'icone' => 'fas fa-cog',
         'url' => 'configuracoes.php',
         'perfis' => ['admin', 'gerencia', 'vendedor']
-    ]
+    ],
 ];
 
 // Filtrar páginas baseado no perfil do usuário
@@ -117,7 +131,7 @@ $email = htmlspecialchars($usuario_logado['email']);
         <div class="profile-container">
             <!-- Avatar e informações do usuário -->
             <div class="profile-info">
-                <div class="profile-avatar-small" data-tooltip="<?php echo $nome_completo; ?>" onclick="abrirModalTrocarFoto()">
+                <div class="profile-avatar-small" data-tooltip="<?php echo $nome_completo; ?>">
     <?php if (isset($usuario_logado['foto']) && !empty($usuario_logado['foto'])): ?>
         <img src="<?php echo htmlspecialchars($usuario_logado['foto']); ?>" alt="<?php echo $nome_completo; ?>">
     <?php else: ?>
@@ -170,59 +184,4 @@ $email = htmlspecialchars($usuario_logado['email']);
 <!-- Incluir JavaScript da Sidebar -->
 <script src="assets/js/sidebar.js"></script>
 
-<div class="modal" id="modal-foto">
-  <div class="modal-content small">
-    <div class="modal-header">
-      <h3>Alterar foto de perfil</h3>
-      <button class="modal-close" onclick="fecharModalFoto()">×</button>
-    </div>
 
-    <form 
-      action="includes/actions/upload_foto_usuario.php"
-      method="POST"
-      enctype="multipart/form-data"
-      class="modal-body"
-    >
-      <div class="foto-preview">
-        <img 
-          src="<?= $usuario_logado['foto'] ?: 'assets/img/avatar-default.png' ?>" 
-          id="previewFoto"
-        >
-      </div>
-
-      <input 
-        type="file" 
-        name="foto" 
-        accept="image/*"
-        required
-        onchange="previewFoto(this)"
-      >
-
-      <button class="btn-primary full">
-        Salvar foto
-      </button>
-    </form>
-  </div>
-</div>
-
-
-
-<script>
-function abrirModalTrocarFoto() {
-  document.getElementById('modal-foto').classList.add('active');
-}
-
-function fecharModalFoto() {
-  document.getElementById('modal-foto').classList.remove('active');
-}
-
-function previewFoto(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('previewFoto').src = e.target.result;
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
-}
-</script>

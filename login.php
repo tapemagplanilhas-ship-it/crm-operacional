@@ -8,7 +8,7 @@ if (isset($_SESSION['usuario_id']) && isset($_SESSION['perfil'])) {
     exit;
 }
 
-$erro = '';
+$erro = '';         
 
 // Processar login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -87,17 +87,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_log->bind_param("iss", $user['id'], $ip, $user_agent);
                     $stmt_log->execute();
                     
-                    $erro = 'Usuário ou senha incorretos';
+                    $erro = 'Usu+�rio ou senha incorretos';
                 }
             } else {
-                $erro = 'Usuário ou senha incorretos';
+                $erro = 'Usu+�rio ou senha incorretos';
             }
             
             $conn->close();
         } else {
-            $erro = 'Erro de conexão com o banco de dados';
+            $erro = 'Erro de conex+�o com o banco de dados';
         }
     }
+}
+
+function registrarLogin($conn, $usuario_id) {
+    // Atualizar ultimo login
+    $sql = "UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $usuario_id);
+    mysqli_stmt_execute($stmt);
+
+    // Registrar sessao
+    $session_id = session_id();
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+    $sql = "INSERT INTO usuarios_sessoes (usuario_id, session_id, ip_address, user_agent, ultima_atividade, criado_em)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE ultima_atividade = NOW()";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "isss", $usuario_id, $session_id, $ip_address, $user_agent);
+    mysqli_stmt_execute($stmt);
+
+    // Registrar log
+    $sql = "INSERT INTO usuarios_logs (usuario_id, tipo, ip_address, user_agent, detalhes)
+            VALUES (?, 'login', ?, ?, 'Login realizado com sucesso')";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "iss", $usuario_id, $ip_address, $user_agent);
+    mysqli_stmt_execute($stmt);
 }
 ?>
 <!DOCTYPE html>
@@ -106,6 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM TAPEMAG - Login</title>
+    <link rel="icon" type="image/png" href="assets/images/logo-tapemag.png" media="(prefers-color-scheme: light)">
+    <link rel="icon" type="image/png" href="assets/images/logo-tapemag2.png" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="login.css">
     <style>
         /* Estilos adicionais específicos para PHP */
@@ -123,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .error-message:empty {
             display: none;
         }
-        
+
         /* Ajuste para manter o usuário logado */
         .field-checkbox {
             margin-top: 10px;
@@ -139,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 margin: 0 20px;
             }
         }
-        
+
         /* Link de recuperação de senha */
         .reset-pass a {
             color: #d10101;
@@ -203,32 +232,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span class="padding-bottom--15">Entre na sua conta</span>
                             <form method="POST" action="">
                                 <div class="field padding-bottom--24">
-                                    <label for="usuario">Usuário ou E-mail</label>
-                                    <input type="text" id="usuario" name="usuario" 
-                                           placeholder="Digite seu usuário ou e-mail" 
-                                           required autofocus>
+                                    <label for="usuario"></label>
+                                    <!-- No seu login.php/html -->
+                                    <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário ou e-mail">  <!-- Removido autofocus -->
                                 </div>
                                 
                                 <div class="field padding-bottom--24">
                                     <div class="grid--50-50">
-                                        <label for="senha">Senha</label>
-                                        <div class="reset-pass">
-                                            <a href="#">Esqueceu a senha?</a>
-                                        </div>
+                                        <label for="senha"></label>
+                                        
                                     </div>
                                     <input type="password" id="senha" name="senha" 
                                            placeholder="Digite sua senha" required>
                                 </div>
                                 
-                                <div class="field field-checkbox padding-bottom--24 flex-flex align-center">
+                                <div class="field field-checkbox padding-bottom--24 flex-flex justify-content--center align-center">
                                     <label for="lembrar">
                                         <input type="checkbox" id="lembrar" name="lembrar">
                                         Permanecer conectado
                                     </label>
+                                    
                                 </div>
                                 
                                 <div class="field padding-bottom--24">
                                     <input type="submit" name="submit" value="Entrar no Sistema">
+                                </div>
+
+                                <div class="signup-link padding-top--16">
+                                <span>Ainda não tem cadastro? <a href="cadastro.php" style="color: #d10101;">Crie sua conta</a></span>
                                 </div>
                             </form>
                         </div>
@@ -238,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="listing padding-top--24 padding-bottom--24 flex-flex center-center">
                             <span><a href="#">Sistema de Gestão de Vendas</a></span>
                             <span><a href="#">Suporte</a></span>
-                            <span><a href="#">© TAPEMAG</a></span>
+                            <span><a href="#">® TAPEMAG</a></span>
                         </div>
                         <div class="listing padding-bottom--24 flex-flex center-center">
                             <span>Em caso de problemas, entre em contato com o administrador.</span>
@@ -274,13 +305,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         toggleSenha.addEventListener('click', function() {
             if (senhaInput.type === 'password') {
                 senhaInput.type = 'text';
-                this.innerHTML = '🙈';
+                this.innerHTML = '👁️';
             } else {
                 senhaInput.type = 'password';
-                this.innerHTML = '👁️';
+                this.innerHTML = '🙈';
             }
         });
-        
+
         // Prevenir múltiplos envios do formulário
         const form = document.querySelector('form');
         form.addEventListener('submit', function() {
@@ -290,33 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         // Após autenticação bem-sucedida
-function registrarLogin($conn, $usuario_id) {
-    // Atualizar último login
-    $sql = "UPDATE usuarios SET ultimo_login = NOW() WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "i", $usuario_id);
-    mysqli_stmt_execute($stmt);
-    
-    // Registrar sessão
-    $session_id = session_id();
-    $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    
-    $sql = "INSERT INTO usuarios_sessoes (usuario_id, session_id, ip_address, user_agent, ultima_atividade, criado_em)
-            VALUES (?, ?, ?, ?, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE ultima_atividade = NOW()";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "isss", $usuario_id, $session_id, $ip_address, $user_agent);
-    mysqli_stmt_execute($stmt);
-    
-    // Registrar log
-    $sql = "INSERT INTO usuarios_logs (usuario_id, tipo, ip_address, user_agent, detalhes)
-            VALUES (?, 'login', ?, ?, 'Login realizado com sucesso')";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "iss", $usuario_id, $ip_address, $user_agent);
-    mysqli_stmt_execute($stmt);
-}
-    </script>
+</script>
 </body>
 </html>
 

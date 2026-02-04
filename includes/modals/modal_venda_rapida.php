@@ -6,6 +6,26 @@
         </div>
         
         <form id="form-venda-rapida" class="modal-form" onsubmit="registrarVendaRapida(event)">
+            <?php
+            if (!isset($motivos_perda)) {
+                $motivos_perda = [];
+                if (function_exists('getConnection')) {
+                    $conn = getConnection();
+                    if ($conn) {
+                        $tableExists = $conn->query("SHOW TABLES LIKE 'motivos_perda'");
+                        if ($tableExists && $tableExists->num_rows > 0) {
+                            $result = $conn->query("SELECT id, nome, permite_outro FROM motivos_perda ORDER BY ordem ASC, nome ASC");
+                            if ($result) {
+                                while ($row = $result->fetch_assoc()) {
+                                    $motivos_perda[] = $row;
+                                }
+                            }
+                        }
+                        $conn->close();
+                    }
+                }
+            }
+            ?>
             <div class="form-group">
                 <label for="venda-rapida-cliente" class="required">Cliente</label>
                 <div class="search-container">
@@ -62,13 +82,30 @@
                     </select>
                 </div>
             </div>
+
+            <div class="form-group" id="campo-codigo-orcamento-rapida">
+                <label for="venda-rapida-codigo-orcamento">Código do Orçamento</label>
+                <input type="text" id="venda-rapida-codigo-orcamento" name="codigo_orcamento"
+                       placeholder="Ex: 12345" inputmode="numeric"
+                       oninput="limparNaoNumericos(this)">
+                <small class="field-hint">Opcional, apenas números</small>
+            </div>
             
             <!-- Campo de motivo da perda (aparece apenas quando status = PERDIDA) -->
             <div class="form-group" id="campo-motivo-perda" style="display: none;">
-                <label for="venda-rapida-motivo-perda" class="required">Motivo da Perda</label>
-                <textarea id="venda-rapida-motivo-perda" name="motivo_perda" 
-                          placeholder="Descreva o motivo pelo qual a venda foi perdida..." 
-                          rows="3"></textarea>
+                <label for="venda-rapida-motivo-perda-select" class="required">Motivo da Perda</label>
+                <select id="venda-rapida-motivo-perda-select" name="motivo_perda_id" onchange="mostrarCampoMotivoPerda()">
+                    <option value="">Selecione...</option>
+                    <?php foreach ($motivos_perda as $motivo): ?>
+                        <option value="<?= (int)$motivo['id'] ?>" data-permite-outro="<?= (int)$motivo['permite_outro'] ?>">
+                            <?= htmlspecialchars($motivo['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div id="venda-rapida-motivo-perda-outro-container" style="display: none; margin-top: 10px;">
+                    <input type="text" id="venda-rapida-motivo-perda-outro" name="motivo_perda_outro"
+                           placeholder="Descreva o motivo" />
+                </div>
                 <small class="field-hint">Campo obrigatório para vendas perdidas</small>
             </div>
             
@@ -91,3 +128,4 @@
         </form>
     </div>
 </div>
+

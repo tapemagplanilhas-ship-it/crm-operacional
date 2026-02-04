@@ -28,7 +28,7 @@
 
 .sidebar-logo-toggle {
     padding: 1.5rem;
-    cursor: pointer;
+    cursor: e-resize;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     transition: 0.3s ease;
     min-height: 70px;
@@ -358,41 +358,45 @@
 }
 
 /* Botão de ações (3 pontos) */
-.actions-toggle {
+.sidebar .actions-toggle {
     background: none;
     border: none;
     color: rgba(68, 68, 68, 0.7);
-    cursor: pointer;
+    cursor: default;
     padding: 0.5rem;
     border-radius: 4px;
     transition: 0.2s ease;
     flex-shrink: 0;
     width: 32px;
     height: 32px;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 1001;
 }
 
-.actions-toggle:hover {
+.sidebar .actions-toggle:hover {
     color: rgb(46, 46, 46);
     background: rgba(0, 0, 0, 0.05);
 }
 
 
 /* Sidebar retraída - ajustes */
-.sidebar:not(.expanded) .profile-details,
-.sidebar:not(.expanded) .actions-toggle {
+.sidebar:not(.expanded) .profile-details {
     display: none;
 }
 
 .sidebar:not(.expanded) .profile-container {
     justify-content: center;
     margin: 5px 0;
+    flex-direction: column;
+    gap: 6px;
 }
 
+.sidebar:not(.expanded) .actions-toggle {
+    display: none !important; /* Esconder */
+}
 .sidebar:not(.expanded) .profile-avatar-small {
     width: 44px;
     height: 44px;
@@ -457,7 +461,7 @@
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
-    cursor: pointer;
+    cursor: default;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -513,20 +517,20 @@
 /* ============================================== */
 
 /* Remover animações de debug */
-.actions-dropdown.show {
+.sidebar .actions-dropdown.show {
     animation: none !important;
     border: 1px solid #e1e1e1 !important;
 }
 
 /* Garantir que o dropdown não seja afetado por outros estilos */
-.actions-dropdown * {
+.sidebar .actions-dropdown * {
     box-sizing: border-box;
 }
 
 /* Melhorar acessibilidade do foco */
 .nav-link:focus,
-.actions-toggle:focus,
-.dropdown-item:focus {
+.sidebar .actions-toggle:focus,
+.sidebar .dropdown-item:focus {
     outline: 1px solid #9797977e;
     background-color: rgba(0, 0, 0, 0.3);
     outline-offset: 2px;
@@ -556,10 +560,10 @@
    ============================================== */
 
 /* Container do dropdown */
-.actions-dropdown {
+.sidebar .actions-dropdown {
     position: fixed !important;
-    bottom: 90px !important;
-    right: 25px !important;
+    top: var(--dropdown-top, auto) !important;
+    left: var(--dropdown-left, auto) !important;
     background: white !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 8px !important;
@@ -574,7 +578,7 @@
 }
 
 /* Quando mostrar */
-.actions-dropdown.show {
+.sidebar .actions-dropdown.show {
     display: block !important;
     animation: dropdownSlideIn 0.2s ease-out !important;
 }
@@ -590,32 +594,11 @@
     }
 }
 
-/* Quando a sidebar estiver expandida: posicionar o dropdown ao lado do footer/profile sem causar overflow */
-.sidebar.expanded .actions-dropdown {
-    position: fixed !important; /* fixo na viewport - evita overflow horizontal */
-    left: calc(250px + 8px) !important; /* 250px = largura da sidebar expanded + gap */
-    bottom: 90px !important; /* alinhado verticalmente próximo ao footer/profile */
-    transform: none !important;
-    right: auto !important;
-    top: auto !important;
-    z-index: 10000002 !important; /* garantir que fique acima de tudo */
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
-}
 
-/* Responsivo: em telas pequenas, manter o comportamento fixed (bottom-right) */
-@media (max-width: 992px) {
-    .actions-dropdown {
-        position: fixed !important;
-        right: 25px !important;
-        bottom: 90px !important;
-        left: auto !important;
-        top: auto !important;
-        transform: none !important;
-    }
-}
+/* Posicionamento final e calculado via JS */
 
 /* Itens do dropdown */
-.dropdown-item {
+.sidebar .dropdown-item {
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
@@ -631,17 +614,17 @@
     cursor: pointer !important;
 }
 
-.dropdown-item:hover {
+.sidebar .dropdown-item:hover {
     background-color: #f7fafc !important;
 }
 
-.dropdown-item i {
+.sidebar .dropdown-item i {
     width: 20px !important;
     text-align: center !important;
     font-size: 14px !important;
 }
 
-.dropdown-divider {
+.sidebar .dropdown-divider {
     height: 1px !important;
     background-color: #e2e8f0 !important;
     margin: 4px 0 !important;
@@ -649,16 +632,16 @@
 }
 
 /* Logout com cor diferente */
-.logout-item {
+.sidebar .logout-item {
     color: #e53e3e !important;
 }
 
-.logout-item:hover {
+.sidebar .logout-item:hover {
     background-color: #fff5f5 !important;
 }
 
 /* Botão de toggle */
-.actions-toggle {
+.sidebar .actions-toggle {
     background: none !important;
     border: none !important;
     color: rgba(68, 68, 68, 0.7) !important;
@@ -676,19 +659,19 @@
     z-index: 1000001 !important; /* Acima do dropdown */
 }
 
-.actions-toggle:hover {
+.sidebar .actions-toggle:hover {
     color: rgb(46, 46, 46) !important;
     background: rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Ajuste quando sidebar está retraída */
 .sidebar:not(.expanded) .actions-toggle {
-    display: none !important; /* Esconder quando sidebar retraída */
+    display: none !important; /* Esconder */
 }
 
 /* Ajuste quando sidebar está expandida */
 .sidebar.expanded .actions-toggle {
-    display: flex !important; /* Mostrar quando sidebar expandida */
+    display: flex !important; /* Mostrar */
 }
 /* ============================================== */
 /* CONTROLE DE ANIMAÇÕES                          */
@@ -818,7 +801,7 @@ body:not(.animations-ready) .sidebar * {
 }
 
 .profile-avatar-small {
-  cursor: pointer;
+  cursor: default;
 }
 
 .foto-preview {

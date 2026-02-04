@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - CRM TAPEMAG</title>
+    <link rel="icon" type="image/png" href="assets/images/logo-tapemag.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="cadastro.css">
+</head>
+<body>
+    <div class="login-root">
+        <div class="box-root flex-flex flex-direction--column" style="min-height: 100vh;flex-grow: 1;">
+            <div class="loginbackground box-background--white padding-top--64">
+                <div class="loginbackground-gridContainer">
+                    <!-- Grid animado igual ao login -->
+                </div>
+            </div>
+            
+            <div class="box-root padding-top--24 flex-flex flex-direction--column" style="flex-grow: 1; z-index: 9;">
+                <div class="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center">
+                    <h1><a href="index.php" style="color: #d10101;">CRM TAPEMAG</a></h1>
+                </div>
+                
+                <?php if ($erro): ?>
+                <div class="error-message">
+                    <?php echo htmlspecialchars($erro); ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($sucesso): ?>
+                <div class="success-message">
+                    <?php echo htmlspecialchars($sucesso); ?>
+                </div>
+                <?php endif; ?>
+                
+                <div class="formbg-outer">
+                    <div class="formbg">
+                        <div class="formbg-inner padding-horizontal--48">
+                            <span class="padding-bottom--15">Crie sua conta</span>
+                            <form method="POST" action="" id="form-cadastro">
+                                <div class="field padding-bottom--24">
+                                    <label for="nome">Nome Completo</label>
+                                    <input type="text" id="nome" name="nome" 
+                                           placeholder="Digite seu nome completo" 
+                                           required
+                                           value="<?php echo htmlspecialchars($nome ?? ''); ?>">
+                                </div>
+                                
+                                <div class="field padding-bottom--24">
+                                    <label for="email">E-mail</label>
+                                    <input type="email" id="email" name="email" 
+                                           placeholder="Digite seu e-mail" 
+                                           required
+                                           value="<?php echo htmlspecialchars($email ?? ''); ?>">
+                                </div>
+                                
+                                <div class="field padding-bottom--24">
+                                    <label for="usuario">Nome de Usuário</label>
+                                    <input type="text" id="usuario" name="usuario" 
+                                           placeholder="Escolha um nome de usuário" 
+                                           required
+                                           value="<?php echo htmlspecialchars($usuario ?? ''); ?>">
+                                </div>
+                                
+                                <div class="field padding-bottom--24">
+                                    <label for="senha">Senha</label>
+                                    <div class="password-wrapper">
+                                        <input type="password" id="senha" name="senha" 
+                                               placeholder="Digite sua senha (mínimo 8 caracteres)" 
+                                               required
+                                               minlength="8">
+                                        <button type="button" class="toggle-password" onclick="togglePassword('senha')" aria-label="Mostrar senha">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div id="password-strength" class="password-strength"></div>
+                                </div>
+                                
+                                <div class="field padding-bottom--24">
+                                    <label for="confirmar_senha">Confirmar Senha</label>
+                                    <div class="password-wrapper">
+                                        <input type="password" id="confirmar_senha" name="confirmar_senha" 
+                                               placeholder="Confirme sua senha" 
+                                               required
+                                               minlength="8">
+                                        <button type="button" class="toggle-password" onclick="togglePassword('confirmar_senha')" aria-label="Mostrar senha">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div id="password-match" class="password-match"></div>
+                                </div>
+                                
+                                <div class="field padding-bottom--24">
+                                    <input type="submit" name="submit" value="Cadastrar" class="btn-submit">
+                                </div>
+                            </form>
+                            
+                            <div class="login-link">
+                                <span>Já tem uma conta? <a href="login.php">Faça login</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-link padding-top--24">
+                        <div class="listing padding-top--24 padding-bottom--24 flex-flex center-center">
+                            <span><a href="#">Sistema de Gestão de Vendas</a></span>
+                            <span><a href="#">Suporte</a></span>
+                            <span><a href="#">® TAPEMAG</a></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // Função para mostrar/ocultar senha
+    function togglePassword(fieldId) {
+        const input = document.getElementById(fieldId);
+        const icon = input.nextElementSibling.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+            icon.setAttribute('aria-label', 'Ocultar senha');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+            icon.setAttribute('aria-label', 'Mostrar senha');
+        }
+        
+        input.focus();
+    }
+
+    // Validação de força da senha
+    document.getElementById('senha').addEventListener('input', function() {
+        const password = this.value;
+        const strengthText = document.getElementById('password-strength');
+        let strength = 0;
+        
+        // Verificar comprimento
+        if (password.length >= 8) strength++;
+        
+        // Verificar letras maiúsculas e minúsculas
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+        
+        // Verificar números
+        if (/[0-9]/.test(password)) strength++;
+        
+        // Verificar caracteres especiais
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+        
+        // Atualizar feedback visual
+        strengthText.className = 'password-strength ';
+        
+        if (strength <= 1) {
+            strengthText.textContent = 'Senha fraca';
+            strengthText.className += 'weak';
+        } else if (strength <= 3) {
+            strengthText.textContent = 'Senha média';
+            strengthText.className += 'medium';
+        } else {
+            strengthText.textContent = 'Senha forte';
+            strengthText.className += 'strong';
+        }
+    });
+
+    // Validação de confirmação de senha
+    document.getElementById('confirmar_senha').addEventListener('input', function() {
+        const confirm = this.value;
+        const password = document.getElementById('senha').value;
+        const matchText = document.getElementById('password-match');
+        
+        if (confirm && password !== confirm) {
+            matchText.textContent = 'As senhas não coincidem';
+            matchText.className = 'password-match mismatch';
+        } else if (confirm) {
+            matchText.textContent = 'Senhas coincidem';
+            matchText.className = 'password-match match';
+        } else {
+            matchText.textContent = '';
+        }
+    });
+
+    // Prevenir múltiplos envios
+    document.getElementById('form-cadastro').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('.btn-submit');
+        submitBtn.disabled = true;
+        submitBtn.value = 'Cadastrando...';
+    });
+    </script>
+</body>
+</html>

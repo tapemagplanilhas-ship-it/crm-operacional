@@ -14,6 +14,22 @@
                        placeholder="Digite o nome do cliente"
                        oninput="verificarAlteracoesCliente()">
             </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cliente-empresa">Nome da empresa</label>
+                    <input type="text" id="cliente-empresa" name="empresa"
+                           placeholder="Nome da empresa"
+                           oninput="verificarAlteracoesCliente()">
+                </div>
+
+                <div class="form-group">
+                    <label for="cliente-documento">CNPJ/CPF</label>
+                    <input type="text" id="cliente-documento" name="documento"
+                           placeholder="00.000.000/0000-00 ou 000.000.000-00"
+                           oninput="verificarAlteracoesCliente()">
+                </div>
+            </div>
             
             <div class="form-row">
                 <div class="form-group">
@@ -77,7 +93,7 @@
                         onclick="fecharModal('cliente')">
                     Cancelar
                 </button>
-                <button type="submit" class="btn-primary" id="btn-salvar-cliente" style="display: none;">
+                <button type="submit" class="btn-primary" id="btn-salvar-cliente">
                     <i class="fas fa-save"></i> Salvar Cliente
                 </button>
             </div>

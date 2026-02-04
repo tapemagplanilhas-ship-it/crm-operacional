@@ -2,7 +2,7 @@
 // ===============================
 // Configuração do banco de dados
 // ===============================
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1:3306');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'crm_operacional');
@@ -21,7 +21,7 @@ function getConnection() {
             return false;
         }
     }
-
+  
     mysqli_set_charset($conn, "utf8mb4");
     return $conn;
 }
@@ -118,6 +118,29 @@ function formatDate($date, $format = 'd/m/Y') {
 
 function formatCurrency($value) {
     return 'R$ ' . number_format((float)$value, 2, ',', '.');
+}
+
+function parseMoneyBR($valor): float {
+    $v = (string)$valor;
+    $v = str_replace(['R$', ' ', "\t", "\n", "\r"], '', $v);
+    $v = str_replace('.', '', $v);
+    $v = str_replace(',', '.', $v);
+    return (float)$v;
+}
+
+function parseDateBR(string $dataBR): ?string {
+    $dataBR = trim($dataBR);
+    if ($dataBR === '') return null;
+
+    if (!preg_match('/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/', $dataBR, $m)) return null;
+
+    $dia = (int)$m[1];
+    $mes = (int)$m[2];
+    $ano = (int)$m[3];
+
+    if (!checkdate($mes, $dia, $ano)) return null;
+
+    return sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
 }
 
 // ===============================

@@ -6,8 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $usuario_id = $_SESSION['usuario_id'] ?? null;
+$perfil_usuario = $_SESSION['perfil'] ?? '';
 if (!$usuario_id) {
-    echo json_encode(['success' => false, 'message' => 'Não autenticado']);
+    echo json_encode(['success' => false, 'message' => 'No autenticado']);
     exit;
 }
 $usuario_id = (int)$usuario_id;
@@ -32,12 +33,19 @@ if ($conn) {
             $params[] = $filtro_status;
             $types .= "s";
         }
-        
+
         if ($filtro_mes && $filtro_ano) {
             $where .= " AND MONTH(v.data_venda) = ? AND YEAR(v.data_venda) = ?";
             $params[] = $filtro_mes;
             $params[] = $filtro_ano;
             $types .= "ii";
+        }
+
+        // Restringir vendas para vendedor (cada vendedor só vê as próprias)
+        if ($perfil_usuario === 'vendedor') {
+            $where .= " AND v.usuario_id = ?";
+            $params[] = $usuario_id;
+            $types .= "i";
         }
         
         // Buscar vendas
@@ -65,7 +73,7 @@ if ($conn) {
         
         $total_vendas = count($vendas);
         
-        // Buscar estatísticas
+        // Buscar estatsticas
         $sql_stats = "SELECT 
                       COUNT(*) as total,
                       COUNT(CASE WHEN status = 'concluida' THEN 1 END) as concluidas,
@@ -73,8 +81,21 @@ if ($conn) {
                       COUNT(CASE WHEN status = 'orcamento' THEN 1 END) as orcamentos,
                       COALESCE(SUM(CASE WHEN status = 'concluida' THEN valor ELSE 0 END), 0) as valor_total
                       FROM vendas";
-        
-        $result_stats = $conn->query($sql_stats);
+
+        $params_stats = [];
+        $types_stats = "";
+        if ($perfil_usuario === 'vendedor') {
+            $sql_stats .= " WHERE usuario_id = ?";
+            $params_stats[] = $usuario_id;
+            $types_stats .= "i";
+        }
+
+        $stmt_stats = $conn->prepare($sql_stats);
+        if (!empty($params_stats)) {
+            $stmt_stats->bind_param($types_stats, ...$params_stats);
+        }
+        $stmt_stats->execute();
+        $result_stats = $stmt_stats->get_result();
         $stats = $result_stats->fetch_assoc();
         
     } catch (Exception $e) {
@@ -83,12 +104,27 @@ if ($conn) {
     
     $conn->close();
 }
+// Carregar motivos de perda para selects
+$motivos_perda = [];
+$motivos_conn = getConnection();
+if ($motivos_conn) {
+    $tableExists = $motivos_conn->query("SHOW TABLES LIKE 'motivos_perda'");
+    if ($tableExists && $tableExists->num_rows > 0) {
+        $resMotivos = $motivos_conn->query("SELECT id, nome, permite_outro FROM motivos_perda ORDER BY ordem ASC, nome ASC");
+        if ($resMotivos) {
+            while ($row = $resMotivos->fetch_assoc()) {
+                $motivos_perda[] = $row;
+            }
+        }
+    }
+    $motivos_conn->close();
+}
 ?>
 
 <div class="page-header">
     <h2><i class="fas fa-shopping-cart"></i> Vendas / Negociações</h2>
     <div class="page-actions">
-        <button class="btn-success" onclick="abrirModalVendaRapida()">
+        <button type="button" class="btn-success" data-action="venda-rapida">
             <i class="fas fa-bolt"></i> Venda Rápida
         </button>
         <button class="btn-primary" onclick="window.location.href='clientes.php'">
@@ -97,7 +133,7 @@ if ($conn) {
     </div>
 </div>
 
-<!-- Cards de Estatísticas - Versão Clean -->
+<!-- Cards de Estatsticas - Verso Clean -->
 <div class="stats-grid clean" style="margin-bottom: 30px;">
     <div class="stat-card clean">
         <div class="stat-icon clean">
@@ -165,7 +201,7 @@ if ($conn) {
             </div>
             
             <div class="form-group">
-                <label for="filtro-mes">Mês</label>
+                <label for="filtro-mes">Ms</label>
                 <select id="filtro-mes" name="mes" class="form-control" onchange="this.form.submit()">
                     <?php for ($i = 1; $i <= 12; $i++): ?>
                         <option value="<?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>" 
@@ -194,8 +230,8 @@ if ($conn) {
     </form>
 </div>
 
-<!-- Tabela de Vendas com ordenação -->
-<div class="table-responsive">
+<!-- Tabela de Vendas com ordenao -->
+<div class="table-responsive table-responsive-clientes">
     <table class="data-table sortable" id="tabela-vendas">
         <thead>
             <tr>
@@ -222,16 +258,16 @@ if ($conn) {
         </thead>
         <tbody id="vendas-body">
             <?php 
-            // Ordenação inicial baseada nos filtros GET
+            // Ordenao inicial baseada nos filtros GET
             $sort_by = $_GET['sort'] ?? 'data_venda';
             $sort_order = $_GET['order'] ?? 'desc';
             
-            // Função para ordenar array multidimensional
+            // Funo para ordenar array multidimensional
             usort($vendas, function($a, $b) use ($sort_by, $sort_order) {
                 $val_a = $a[$sort_by] ?? '';
                 $val_b = $b[$sort_by] ?? '';
                 
-                // Tratamento especial para valores numéricos
+                // Tratamento especial para valores numricos
                 if ($sort_by === 'valor') {
                     $val_a = floatval($val_a);
                     $val_b = floatval($val_b);
@@ -261,7 +297,7 @@ if ($conn) {
                         <strong><?= date('d/m/Y', strtotime($venda['data_venda'])) ?></strong>
                     </td>
                     <td>
-                        <strong><?= htmlspecialchars($venda['cliente_nome'] ?? 'Cliente não encontrado') ?></strong>
+                        <strong><?= htmlspecialchars($venda['cliente_nome'] ?? 'Cliente no encontrado') ?></strong>
                         <?php if (!empty($venda['cliente_telefone'])): ?>
                         <div class="text-muted"><?= htmlspecialchars($venda['cliente_telefone']) ?></div>
                         <?php endif; ?>
@@ -364,7 +400,7 @@ if ($conn) {
     </div>
 </div>
 
-<!-- Modal de Edição de Venda -->
+<!-- Modal de Edio de Venda -->
 <div id="modal-editar-venda" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
@@ -418,10 +454,29 @@ if ($conn) {
                     </select>
                 </div>
             </div>
-            
+
+            <!-- Campo de código de orçamento -->
+            <div class="form-group" id="campo-codigo-orcamento-edicao">
+                <label for="editar-codigo-orcamento">Código do Orçamento</label>
+                <input type="text" id="editar-codigo-orcamento" name="codigo_orcamento"
+                       placeholder="Ex: 12345" inputmode="numeric"
+                       oninput="limparNaoNumericos(this)">
+                <small class="field-hint">Opcional, apenas números</small>
+            </div>
+
             <div class="form-group" id="campo-motivo-perda-edicao" style="display: none;">
-                <label for="editar-motivo-perda">Motivo da Perda</label>
-                <textarea id="editar-motivo-perda" name="motivo_perda" rows="3"></textarea>
+                <label for="editar-motivo-perda-select" class="required">Motivo da Perda</label>
+                <select id="editar-motivo-perda-select" name="motivo_perda_id" onchange="mostrarCampoMotivoPerdaEdicao()">
+                    <option value="">Selecione...</option>
+                    <?php foreach ($motivos_perda as $motivo): ?>
+                        <option value="<?= (int)$motivo['id'] ?>" data-permite-outro="<?= (int)$motivo['permite_outro'] ?>">
+                            <?= htmlspecialchars($motivo['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div id="editar-motivo-perda-outro-container" style="display: none; margin-top: 10px;">
+                    <input type="text" id="editar-motivo-perda-outro" name="motivo_perda_outro" placeholder="Descreva o motivo" />
+                </div>
             </div>
             
             <div class="form-group">
@@ -442,7 +497,7 @@ if ($conn) {
 </div>
 
 <style>
-    /* Estilos específicos para a página de vendas */
+    /* Estilos especficos para a pgina de vendas */
     .filters-card {
         background: white;
         border-radius: 12px;
@@ -633,9 +688,9 @@ if ($conn) {
 </style>
 
 <script>
-// Funções para a página de vendas
+// Funes para a pgina de vendas
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar formatação de moeda e data nos inputs
+    // Configurar formatao de moeda e data nos inputs
     document.querySelectorAll('.money-input').forEach(input => {
         if (input.value) formatarMoeda(input);
     });
@@ -664,8 +719,8 @@ async function verDetalhesVenda(vendaId) {
             const venda = data.data;
             
             // Formatar dados
-            const dataVenda = venda.data_venda ? new Date(venda.data_venda).toLocaleDateString('pt-BR') : 'Não informada';
-            const dataRegistro = venda.data_registro ? new Date(venda.data_registro).toLocaleString('pt-BR') : 'Não informada';
+            const dataVenda = venda.data_venda ? new Date(venda.data_venda).toLocaleDateString('pt-BR') : 'No informada';
+            const dataRegistro = venda.data_registro ? new Date(venda.data_registro).toLocaleString('pt-BR') : 'No informada';
             const valorFormatado = 'R$ ' + parseFloat(venda.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2});
             
             // Status e pagamento
@@ -682,20 +737,24 @@ async function verDetalhesVenda(vendaId) {
                 'boleto': 'Boleto',
                 'na': 'N/A'
             };
-            
+
             const statusClass = {
                 'concluida': 'status-concluida',
                 'perdida': 'status-perdida',
                 'orcamento': 'status-orcamento'
             };
+
+            const mostrarVendedor = <?php echo json_encode(in_array($perfil_usuario, ['admin', 'gerencia'], true)); ?>;
+            const vendedorNome = (venda.vendedor_nome ?? '').toString().trim();
+            const codigoOrcamento = (venda.codigo_orcamento ?? '').toString().trim();
             
             conteudo.innerHTML = `
                 <div class="detalhes-venda">
                     <div class="detalhes-item">
                         <div class="detalhes-label">Cliente</div>
                         <div class="detalhes-value">
-                            <strong>${escapeHtml(venda.cliente_nome || 'Cliente não encontrado')}</strong>
-                            ${venda.cliente_telefone ? `<div style="margin-top: 5px;">📱 ${escapeHtml(venda.cliente_telefone)}</div>` : ''}
+                            <strong>${escapeHtml(venda.cliente_nome || 'Cliente no encontrado')}</strong>
+                            ${venda.cliente_telefone ? `<div style="margin-top: 5px;">?? ${escapeHtml(venda.cliente_telefone)}</div>` : ''}
                         </div>
                     </div>
                     
@@ -732,6 +791,20 @@ async function verDetalhesVenda(vendaId) {
                         </div>
                     </div>
                     
+                    ${mostrarVendedor ? `
+                    <div class="detalhes-item">
+                        <div class="detalhes-label">Vendedor</div>
+                        <div class="detalhes-value">${escapeHtml(vendedorNome || '-')}</div>
+                    </div>
+                    ` : ''}
+
+                    ${codigoOrcamento ? `
+                    <div class="detalhes-item">
+                        <div class="detalhes-label">Número do Orçamento</div>
+                        <div class="detalhes-value">${escapeHtml(codigoOrcamento)}</div>
+                    </div>
+                    ` : ''}
+
                     ${venda.status === 'perdida' && venda.motivo_perda ? `
                     <div class="detalhes-item">
                         <div class="detalhes-label">Motivo da Perda</div>
@@ -753,7 +826,7 @@ async function verDetalhesVenda(vendaId) {
                 </div>
             `;
             
-            // Configurar botão de editar
+            // Configurar boto de editar
             btnEditar.onclick = function() {
                 fecharModal('detalhes-venda');
                 setTimeout(() => editarVenda(vendaId), 300);
@@ -769,7 +842,7 @@ async function verDetalhesVenda(vendaId) {
     } catch (error) {
         console.error('Erro:', error);
         document.getElementById('detalhes-venda-conteudo').innerHTML = 
-            '<div class="text-center" style="padding: 40px; color: #e53e3e;">Erro de conexão</div>';
+            '<div class="text-center" style="padding: 40px; color: #e53e3e;">Erro de conexo</div>';
     }
 }
 
@@ -779,7 +852,7 @@ async function editarVenda(vendaId) {
         const modal = document.getElementById('modal-editar-venda');
         const form = document.getElementById('form-editar-venda');
         
-        // Limpar formulário
+        // Limpar formulrio
         form.reset();
         document.getElementById('campo-motivo-perda-edicao').style.display = 'none';
         
@@ -790,10 +863,10 @@ async function editarVenda(vendaId) {
         if (data.success) {
             const venda = data.data;
             
-            // Preencher formulário
+            // Preencher formulrio
             document.getElementById('editar-venda-id').value = venda.id;
             document.getElementById('editar-cliente-id').value = venda.cliente_id;
-            document.getElementById('editar-cliente-nome').value = venda.cliente_nome || 'Cliente não encontrado';
+            document.getElementById('editar-cliente-nome').value = venda.cliente_nome || 'Cliente no encontrado';
             
             // Valor
             const valorInput = document.getElementById('editar-valor');
@@ -812,11 +885,15 @@ async function editarVenda(vendaId) {
             // Forma de pagamento
             document.getElementById('editar-forma-pagamento').value = venda.forma_pagamento || 'na';
             
-            // Motivo da perda (se houver)
-            if (venda.status === 'perdida' && venda.motivo_perda) {
-                document.getElementById('editar-motivo-perda').value = venda.motivo_perda;
-                document.getElementById('campo-motivo-perda-edicao').style.display = 'block';
+            // Código do orçamento
+            const codigoOrcamentoInput = document.getElementById('editar-codigo-orcamento');
+            if (codigoOrcamentoInput) {
+                codigoOrcamentoInput.value = venda.codigo_orcamento ? String(venda.codigo_orcamento) : '';
             }
+
+            // Motivo da perda (se houver)
+            preencherMotivoPerdaEdicao(venda.motivo_perda_id, venda.motivo_perda_outro);
+            mostrarCampoMotivoPerdaEdicao();
             
             // Observações
             document.getElementById('editar-observacoes').value = venda.observacoes || '';
@@ -831,11 +908,11 @@ async function editarVenda(vendaId) {
         
     } catch (error) {
         console.error('Erro:', error);
-        mostrarToast('Erro de conexão', 'error');
+        mostrarToast('Erro de conexo', 'error');
     }
 }
 
-// Função para editar a partir do modal de detalhes
+// Funo para editar a partir do modal de detalhes
 function editarVendaModal() {
     const vendaId = document.getElementById('editar-venda-id').value;
     if (vendaId) {
@@ -844,22 +921,58 @@ function editarVendaModal() {
     }
 }
 
-// Mostrar/ocultar campo motivo na edição
-function mostrarCampoMotivoPerdaEdicao() {
-    const statusSelect = document.getElementById('editar-status');
-    const motivoCampo = document.getElementById('campo-motivo-perda-edicao');
-    const motivoInput = document.getElementById('editar-motivo-perda');
-    
-    if (statusSelect.value === 'perdida') {
-        motivoCampo.style.display = 'block';
-        motivoInput.required = true;
+// Mostrar/ocultar campo motivo na edio
+function obterMotivoPerdaEdicao() {
+    const select = document.getElementById('editar-motivo-perda-select');
+    const outroInput = document.getElementById('editar-motivo-perda-outro');
+    if (!select) return { motivoId: '', motivoOutro: '' };
+    const motivoId = (select.value || '').trim();
+    const permiteOutro = select.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    const motivoOutro = permiteOutro ? (outroInput?.value || '').trim() : '';
+    return { motivoId, motivoOutro };
+}
+
+function preencherMotivoPerdaEdicao(motivoId, motivoOutro) {
+    const select = document.getElementById('editar-motivo-perda-select');
+    const outroContainer = document.getElementById('editar-motivo-perda-outro-container');
+    const outroInput = document.getElementById('editar-motivo-perda-outro');
+    if (!select) return;
+    select.value = motivoId ? String(motivoId) : '';
+    const permiteOutro = select.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    if (permiteOutro && motivoOutro) {
+        if (outroContainer) outroContainer.style.display = 'block';
+        if (outroInput) outroInput.value = motivoOutro;
     } else {
-        motivoCampo.style.display = 'none';
-        motivoInput.required = false;
+        if (outroContainer) outroContainer.style.display = 'none';
+        if (outroInput) outroInput.value = '';
     }
 }
 
-// Salvar edição da venda
+function mostrarCampoMotivoPerdaEdicao() {
+    const statusSelect = document.getElementById('editar-status');
+    const motivoCampo = document.getElementById('campo-motivo-perda-edicao');
+    const select = document.getElementById('editar-motivo-perda-select');
+    const outroContainer = document.getElementById('editar-motivo-perda-outro-container');
+    const outroInput = document.getElementById('editar-motivo-perda-outro');
+    const isPerdida = statusSelect && statusSelect.value === 'perdida';
+    if (motivoCampo) motivoCampo.style.display = isPerdida ? 'block' : 'none';
+    if (select) {
+        select.required = isPerdida;
+        if (!isPerdida) select.value = '';
+    }
+    const isOutro = isPerdida && select && select.selectedOptions?.[0]?.dataset?.permiteOutro === '1';
+    if (outroContainer) outroContainer.style.display = isOutro ? 'block' : 'none';
+    if (outroInput) {
+        outroInput.required = isOutro;
+        if (!isOutro) outroInput.value = '';
+    }
+
+    const campoCodigo = document.getElementById('campo-codigo-orcamento-edicao');
+    if (campoCodigo) campoCodigo.style.display = 'block';
+}
+
+
+// Salvar edio da venda
 async function salvarEdicaoVenda(event) {
     event.preventDefault();
     
@@ -887,17 +1000,25 @@ async function salvarEdicaoVenda(event) {
         return;
     }
     
-    if (data.status === 'perdida' && !data.motivo_perda) {
-        mostrarToast('Motivo da perda é obrigatório para vendas perdidas', 'error');
+    const motivoPayload = obterMotivoPerdaEdicao();
+    if (data.status === 'perdida' && !motivoPayload.motivoId) {
+        mostrarToast('Motivo da perda  obrigatrio para vendas perdidas', 'error');
         return;
     }
-    
+    if (data.status === 'perdida' && !motivoPayload.motivoOutro && document.getElementById('editar-motivo-perda-select')?.selectedOptions?.[0]?.dataset?.permiteOutro === '1') {
+        mostrarToast('Descreva o motivo da perda', 'error');
+        return;
+    }
+    data.motivo_perda_id = motivoPayload.motivoId || '';
+    data.motivo_perda_outro = motivoPayload.motivoOutro || '';
+    delete data.motivo_perda;
+
     const btnSubmit = form.querySelector('button[type="submit"]');
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
     
     try {
-        // Usar a mesma API de vendas, mas com método PUT para atualização
+        // Usar a mesma API de vendas, mas com mtodo PUT para atualizao
         const response = await fetch('api/vendas_editar.php', {
             method: 'POST',
             headers: {
@@ -912,7 +1033,7 @@ async function salvarEdicaoVenda(event) {
             mostrarToast(result.message, 'success');
             fecharModal('editar-venda');
             
-            // Recarregar a página após 1 segundo
+            // Recarregar a pgina aps 1 segundo
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
@@ -921,7 +1042,7 @@ async function salvarEdicaoVenda(event) {
         }
     } catch (error) {
         console.error('Erro:', error);
-        mostrarToast('Erro de conexão', 'error');
+        mostrarToast('Erro de conexo', 'error');
     } finally {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
@@ -930,10 +1051,10 @@ async function salvarEdicaoVenda(event) {
 
 // Excluir venda
 async function excluirVenda(vendaId, clienteNome) {
-    if (!confirm(`Tem certeza que deseja excluir esta negociação do cliente "${clienteNome}"?`)) {
-        return;
-    }
-    
+    if (typeof window.confirmarExclusao !== 'function') return;
+    const confirmado = await window.confirmarExclusao(`Tem certeza que deseja excluir esta negociacao do cliente "${clienteNome}"?`);
+    if (!confirmado) return;
+
     try {
         const response = await fetch(`api/vendas_excluir.php?id=${vendaId}`, {
             method: 'DELETE'
@@ -943,7 +1064,7 @@ async function excluirVenda(vendaId, clienteNome) {
         
         if (result.success) {
             mostrarToast(result.message, 'success');
-            // Recarregar a página
+            // Recarregar a pgina
             setTimeout(() => {
                 window.location.reload();
             }, 500);
@@ -952,7 +1073,7 @@ async function excluirVenda(vendaId, clienteNome) {
         }
     } catch (error) {
         console.error('Erro:', error);
-        mostrarToast('Erro de conexão', 'error');
+        mostrarToast('Erro de conexo', 'error');
     }
 }
 
@@ -992,7 +1113,7 @@ function fecharModal(tipo) {
     }
 }
 
-// Funções utilitárias
+// Funes utilitrias
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -1041,19 +1162,19 @@ function validarData(dataStr) {
     return true;
 }
 
-// Função para mostrar toast (reutilizar se já existir)
+// Funo para mostrar toast (reutilizar se j existir)
 function mostrarToast(mensagem, tipo = 'info') {
-    // Se já existir uma função mostrarToast, ela será usada
-    if (typeof window.mostrarToast === 'function') {
+    // Evita recursao caso esta funcao sobrescreva a global
+    if (typeof window.mostrarToast === 'function' && window.mostrarToast !== mostrarToast) {
         window.mostrarToast(mensagem, tipo);
-    } else {
-        // Fallback simples
-        alert(mensagem);
+        return;
     }
+    alert(mensagem);
 }
 
+
 // ==============================================
-// SISTEMA DE ORDENAÇÃO DAS TABELAS
+// SISTEMA DE ORDENAO DAS TABELAS
 // ==============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1082,12 +1203,12 @@ function inicializarOrdenacaoTabelas() {
                 newOrder = 'asc';
             }
             
-            // Atualizar ícone
+            // Atualizar cone
             updateSortIcons(this, newOrder);
             
             // Se houver dados no cliente (via JS), ordenar localmente
             if (window.location.pathname.includes('vendas.php')) {
-                // Para vendas.php, recarregar com parâmetros GET
+                // Para vendas.php, recarregar com parmetros GET
                 ordenarVendas(sortBy, newOrder);
             } else if (window.location.pathname.includes('clientes.php')) {
                 // Para clientes.php, ordenar via JavaScript
@@ -1096,7 +1217,7 @@ function inicializarOrdenacaoTabelas() {
         });
     });
     
-    // Inicializar ícones baseados na URL atual
+    // Inicializar cones baseados na URL atual
     atualizarIconesOrdenacao();
 }
 
@@ -1141,7 +1262,7 @@ function atualizarIconesOrdenacao() {
 }
 
  // ==============================================
-// SISTEMA DE ORDENAÇÃO DAS TABELAS - SEM RECARREGAR
+// SISTEMA DE ORDENAO DAS TABELAS - SEM RECARREGAR
 // ==============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1172,23 +1293,23 @@ function inicializarOrdenacaoTabelas() {
                 newOrder = 'asc';
             }
             
-            // Atualizar ícone
+            // Atualizar cone
             updateSortIcons(this, newOrder);
             
             // Ordenar a tabela localmente
             if (window.location.pathname.includes('vendas.php')) {
                 ordenarTabelaVendasLocalmente(sortBy, newOrder);
             }
-            // Remover a parte de clientes já que estamos na página de vendas
+            // Remover a parte de clientes j que estamos na pgina de vendas
         });
     });
     
-    // Inicializar ícones baseados na URL atual (mantém estado visual)
+    // Inicializar cones baseados na URL atual (mantm estado visual)
     atualizarIconesOrdenacao();
 }
 
 function updateSortIcons(header, order) {
-    // Resetar ícones de todos os headers da mesma tabela
+    // Resetar cones de todos os headers da mesma tabela
     const table = header.closest('table');
     table.querySelectorAll('.sortable-header').forEach(h => {
         h.dataset.order = '';
@@ -1199,7 +1320,7 @@ function updateSortIcons(header, order) {
         }
     });
     
-    // Atualizar header atual se houver ordenação
+    // Atualizar header atual se houver ordenao
     if (order) {
         header.dataset.order = order;
         const icon = header.querySelector('i');
@@ -1216,8 +1337,8 @@ function updateSortIcons(header, order) {
 }
 
 function atualizarIconesOrdenacao() {
-    // Esta função agora só atualiza os ícones baseados no estado atual
-    // Não usa mais URL, usa os data-attributes que já estão no DOM
+    // Esta funo agora s atualiza os cones baseados no estado atual
+    // No usa mais URL, usa os data-attributes que j esto no DOM
     document.querySelectorAll('.sortable-header').forEach(header => {
         const order = header.dataset.order;
         if (order) {
@@ -1235,10 +1356,10 @@ function atualizarIconesOrdenacao() {
     });
 }
 
-// Função para ordenar a tabela de vendas localmente (SEM RECARREGAR)
+// Funo para ordenar a tabela de vendas localmente (SEM RECARREGAR)
 function ordenarTabelaVendasLocalmente(sortBy, order) {
     if (!order) {
-        // Se order estiver vazio, volta à ordenação original (por data_venda desc)
+        // Se order estiver vazio, volta  ordenao original (por data_venda desc)
         ordenarTabelaVendasLocalmente('data_venda', 'desc');
         return;
     }
@@ -1249,7 +1370,7 @@ function ordenarTabelaVendasLocalmente(sortBy, order) {
     // Filtrar apenas linhas com dados (exclui a linha "Nenhuma venda encontrada")
     const dataRows = rows.filter(row => !row.classList.contains('text-center') || row.cells.length > 1);
     
-    if (dataRows.length <= 1) return; // Não precisa ordenar se tem 0 ou 1 linha
+    if (dataRows.length <= 1) return; // No precisa ordenar se tem 0 ou 1 linha
     
     // Ordenar as linhas
     dataRows.sort((rowA, rowB) => {
@@ -1258,13 +1379,13 @@ function ordenarTabelaVendasLocalmente(sortBy, order) {
         
         let comparison = 0;
         
-        // Comparação baseada no tipo de dado
+        // Comparao baseada no tipo de dado
         if (typeof valueA === 'number' && typeof valueB === 'number') {
             comparison = valueA - valueB;
         } else if (valueA instanceof Date && valueB instanceof Date) {
             comparison = valueA.getTime() - valueB.getTime();
         } else {
-            // Comparação de strings
+            // Comparao de strings
             const strA = String(valueA || '').toLowerCase();
             const strB = String(valueB || '').toLowerCase();
             comparison = strA.localeCompare(strB);
@@ -1278,9 +1399,9 @@ function ordenarTabelaVendasLocalmente(sortBy, order) {
     dataRows.forEach(row => tbody.appendChild(row));
 }
 
-// Função auxiliar para extrair valores das células da tabela de vendas
+// Funo auxiliar para extrair valores das clulas da tabela de vendas
 function getCellValueVendas(row, sortBy) {
-    // Mapeamento de sortBy para índice da coluna
+    // Mapeamento de sortBy para ndice da coluna
     const columnMap = {
         'data_venda': 0,
         'cliente_nome': 1,
@@ -1299,7 +1420,7 @@ function getCellValueVendas(row, sortBy) {
     // Extrair valor baseado no tipo de coluna
     switch(sortBy) {
         case 'valor':
-            // Extrair número do formato "R$ 1.234,56"
+            // Extrair nmero do formato "R$ 1.234,56"
             const valorText = cell.querySelector('strong')?.textContent || cell.textContent;
             const cleanValor = valorText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
             const number = parseFloat(cleanValor);
@@ -1310,7 +1431,7 @@ function getCellValueVendas(row, sortBy) {
             // Extrair data do formato "dd/mm/aaaa" ou "dd/mm/aaaa HH:MM"
             const dateText = cell.textContent.trim();
             
-            // Para data_venda (só data)
+            // Para data_venda (s data)
             if (sortBy === 'data_venda') {
                 const dateMatch = dateText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                 if (dateMatch) {
@@ -1328,7 +1449,7 @@ function getCellValueVendas(row, sortBy) {
                 }
             }
             
-            return new Date(0); // Data padrão se não conseguir parse
+            return new Date(0); // Data padro se no conseguir parse
             
         case 'status':
             // Extrair texto do status badge
@@ -1351,7 +1472,7 @@ function getCellValueVendas(row, sortBy) {
 }
 
 
-// Funções utilitárias (reutilizar se já existirem)
+// Funes utilitrias (reutilizar se j existirem)
 function formatarData(dateString) {
     if (!dateString || dateString === '0000-00-00') return '';
     const date = new Date(dateString);
@@ -1375,3 +1496,7 @@ function escapeHtml(text) {
 <?php 
 require_once 'includes/footer.php';
 ?>
+
+
+
+

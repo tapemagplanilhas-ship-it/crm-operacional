@@ -21,35 +21,37 @@ $erro = '';
 $sucesso = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome = trim($_POST['nome']);
-    $email = trim($_POST['email']);
-    $senha = trim($_POST['senha']);
-    $perfil = $_POST['perfil'];
+    $usuario = trim($_POST['usuario'] ?? '');
+    $nome = trim($_POST['nome'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $senha = trim($_POST['senha'] ?? '');
+    $perfil = $_POST['perfil'] ?? '';
 
-    // Validações básicas
-    if (!$nome || !$email || !$senha || !$perfil) {
+    if (!$usuario || !$nome || !$email || !$senha || !$perfil) {
         $erro = 'Todos os campos são obrigatórios.';
     } else {
-        // Hash da senha
         $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-        // Inserir no banco
-        $sql = "INSERT INTO usuarios (nome, email, senha, perfil, data_cadastro)
-                VALUES (?, ?, ?, ?, NOW())";
+        $sql = "INSERT INTO usuarios (usuario, nome, email, senha, perfil, data_cadastro)
+                VALUES (?, ?, ?, ?, ?, NOW())";
 
         if ($stmt = mysqli_prepare($conn, $sql)) {
-            mysqli_stmt_bind_param($stmt, "ssss", $nome, $email, $senha_hash, $perfil);
+            mysqli_stmt_bind_param($stmt, "sssss", $usuario, $nome, $email, $senha_hash, $perfil);
+
             if (mysqli_stmt_execute($stmt)) {
                 $sucesso = 'Usuário adicionado com sucesso!';
             } else {
-                $erro = 'Erro ao adicionar usuário.';
+                // Se quiser, dá pra melhorar a mensagem quando for duplicado
+                $erro = 'Erro ao adicionar usuário (usuário ou e-mail já existente).';
             }
+
             mysqli_stmt_close($stmt);
         } else {
             $erro = 'Erro na consulta ao banco.';
         }
     }
 }
+
 
 // Buscar todos os usuários
 $usuarios = [];
@@ -76,6 +78,13 @@ if ($result) {
     <section style="margin-bottom: 20px;">
         <h2>Adicionar Novo Usuário</h2>
         <form method="POST" action="">
+
+        <div>
+  <label>Usuário (login):</label>
+  <input type="text" name="usuario" required>
+</div>
+
+
             <div>
                 <label>Nome:</label>
                 <input type="text" name="nome" required>

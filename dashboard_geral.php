@@ -1,19 +1,14 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/header.php';
-
 verificarLogin();
-/* Para páginas específicas de perfil, adicione:
-// requerirPermissao('admin'); // Para páginas só de admin
-// requerirPermissao('gerencia'); // Para páginas de gerência
-?> */
+requerirPermissao('gerencia');
 
 $usuarioId = $_SESSION['usuario_id'] ?? null;
 $perfil = $_SESSION['perfil'] ?? null;
 
-// Filtra pelos dados do usuario logado quando possivel.
-$isVendedor = !empty($usuarioId);
-
+// Dashboard geral: sempre mostra dados consolidados.
+$isVendedor = false;
 
 // Buscar dados iniciais via PHP
 $conn = getConnection();
@@ -25,7 +20,7 @@ $dadosDashboard = [
     'taxa_fechamento_geral' => 0,
     'total_vendas' => 0,
     'vendas_concluidas' => 0,
-    'ultimas_vendas' => []
+    'ultimos_clientes' => []
 ];
 
 try {
@@ -116,66 +111,61 @@ try {
     $stmt->close();
 
     // -----------------------------
-    // 5) ÚLTIMOS CLIENTES (GERAL ou POR VENDEDOR)
+    // 5) ÚLTIMOS CLIENTES (GERAL)
     // -----------------------------
-    $dadosDashboard['ultimas_vendas'] = [];
+    $dadosDashboard['ultimos_clientes'] = [];
 
     if ($isVendedor) {
         $stmt = $conn->prepare("
-            SELECT v.*, c.nome AS cliente_nome
-            FROM vendas v
-            INNER JOIN clientes c ON c.id = v.cliente_id
-            WHERE v.usuario_id = ?
-            ORDER BY v.data_venda DESC, v.id DESC
-            LIMIT 10
+            SELECT c.*
+            FROM clientes c
+            INNER JOIN (
+                SELECT cliente_id, MAX(data_venda) AS ultima
+                FROM vendas
+                WHERE usuario_id = ?
+                GROUP BY cliente_id
+            ) v ON v.cliente_id = c.id
+            ORDER BY v.ultima DESC
+            LIMIT 5
         ");
         $stmt->bind_param("i", $usuarioId);
         $stmt->execute();
         $res = $stmt->get_result();
 
         while ($row = $res->fetch_assoc()) {
-            $dadosDashboard['ultimas_vendas'][] = $row;
+            $dadosDashboard['ultimos_clientes'][] = $row;
         }
         $stmt->close();
     } else {
-        $result = $conn->query("
-            SELECT v.*, c.nome AS cliente_nome
-            FROM vendas v
-            INNER JOIN clientes c ON c.id = v.cliente_id
-            ORDER BY v.data_venda DESC, v.id DESC
-            LIMIT 10
-        ");
+        $result = $conn->query("SELECT * FROM clientes ORDER BY data_cadastro DESC LIMIT 5");
         while ($row = $result->fetch_assoc()) {
-            $dadosDashboard['ultimas_vendas'][] = $row;
+            $dadosDashboard['ultimos_clientes'][] = $row;
         }
     }
 
 } catch (Exception $e) {
-    error_log("Erro dashboard: " . $e->getMessage());
+    error_log("Erro dashboard geral: " . $e->getMessage());
 }
 $conn->close();
 ?>
 
+<script>
+    window.DASHBOARD_SCOPE = 'all';
+</script>
+
 <div class="dashboard">
     <div class="dashboard-header">
-        <h2><i class="fas fa-tachometer-alt"></i> Dashboard - CRM TAPEMAG</h2>
+        <h2><i class="fas fa-tachometer-alt"></i> Dashboard Geral - CRM TAPEMAG</h2>
         <div class="dashboard-actions">
-            <div class="dashboard-actions">
-
-  <button type="button" class="btn-primary" data-action="novo-cliente">
-    <i class="fas fa-user-plus"></i> Novo Cliente
-  </button>
-
-
-        <button type="button" class="btn-success" data-action="venda-rapida">
-            <i class="fas fa-bolt"></i> Venda Rápida
-        </button>
-
-  <button type="button" class="btn-secondary" data-action="editar-dashboard">
-    <i class="fas fa-edit"></i> Editar Dashboard
-  </button>
-</div>
-
+            <button type="button" class="btn-primary" data-action="novo-cliente">
+                <i class="fas fa-user-plus"></i> Novo Cliente
+            </button>
+            <button type="button" class="btn-success" data-action="venda-rapida">
+                <i class="fas fa-bolt"></i> Venda Rápida
+            </button>
+            <button type="button" class="btn-secondary" data-action="editar-dashboard">
+                <i class="fas fa-edit"></i> Editar Dashboard
+            </button>
         </div>
     </div>
     
@@ -253,38 +243,68 @@ $conn->close();
     
     <div class="dashboard-section">
         <div class="section-header">
-            <h3><i class="fas fa-history"></i> Ultimas Vendas</h3>
-            <a href="vendas.php" class="btn-link">Ver todas</a>
+            <h3><i class="fas fa-history"></i> Últimos Clientes Cadastrados</h3>
+            <a href="clientes.php" class="btn-link">Ver todos</a>
         </div>
         
         <div class="table-responsive">
-            <table class="data-table" id="ultimas-vendas">
+            <table class="data-table" id="ultimos-clientes">
                 <thead>
                     <tr>
-                        <th>Cliente</th>
-                        <th>Valor</th>
-                        <th>Data</th>
-                        <th>Status</th>
-                        <th class="text-center">Acoes</th>
+                        <th>Nome</th>
+                        <th>Contato</th>
+                        <th>Data Cadastro</th>
+                        <th>Última Venda</th>
+                        <th>Taxa Fechamento</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
-                <tbody id="ultimas-vendas-body">
-                    <?php if (empty($dadosDashboard['ultimas_vendas'])): ?>
+                <tbody id="ultimos-clientes-body">
+                    <?php if (empty($dadosDashboard['ultimos_clientes'])): ?>
                     <tr>
-                        <td colspan="5" class="text-center">Nenhuma venda registrada</td>
+                        <td colspan="6" class="text-center">Nenhum cliente cadastrado</td>
                     </tr>
                     <?php else: ?>
-                        <?php foreach ($dadosDashboard['ultimas_vendas'] as $venda): ?>
+                        <?php foreach ($dadosDashboard['ultimos_clientes'] as $cliente): ?>
                         <tr>
                             <td>
-                                <strong><?= htmlspecialchars($venda['cliente_nome']) ?></strong>
+                                <strong><?= htmlspecialchars($cliente['nome']) ?></strong>
+                                <?php if (!empty($cliente['observacoes'])): ?>
+                                <div class="text-muted"><?= htmlspecialchars(substr($cliente['observacoes'], 0, 50)) ?>...</div>
+                                <?php endif; ?>
                             </td>
-                            <td>R$ <?= number_format((float)$venda['valor'], 2, ',', '.') ?></td>
-                            <td><?= date('d/m/Y', strtotime($venda['data_venda'])) ?></td>
-                            <td><?= htmlspecialchars($venda['status']) ?></td>
+                            <td>
+                                <?php if (!empty($cliente['telefone'])): ?>
+                                <div><i class="fas fa-phone"></i> <?= htmlspecialchars($cliente['telefone']) ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($cliente['email'])): ?>
+                                <div><i class="fas fa-envelope"></i> <?= htmlspecialchars($cliente['email']) ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= date('d/m/Y', strtotime($cliente['data_cadastro'])) ?></td>
+                            <td>
+                                <?php if (!empty($cliente['ultima_venda']) && $cliente['ultima_venda'] != '0000-00-00'): ?>
+                                    <?= date('d/m/Y', strtotime($cliente['ultima_venda'])) ?>
+                                <?php else: ?>
+                                    Nunca
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($cliente['taxa_fechamento'])): ?>
+                                <div class="progress-indicator">
+                                    <div class="progress-bar" style="width: <?= min($cliente['taxa_fechamento'], 100) ?>%"></div>
+                                    <span><?= number_format($cliente['taxa_fechamento'], 1) ?>%</span>
+                                </div>
+                                <?php else: ?>
+                                <span class="text-muted">0%</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-center">
-                                <button class="btn-icon" onclick="abrirModalCliente(<?= (int)$venda['cliente_id'] ?>)">
-                                    <i class="fas fa-user"></i>
+                                <button class="btn-icon" onclick="abrirModalCliente(<?= $cliente['id'] ?>)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon" onclick="abrirModalVenda(<?= $cliente['id'] ?>)">
+                                    <i class="fas fa-shopping-cart"></i>
                                 </button>
                             </td>
                         </tr>
@@ -346,9 +366,7 @@ $conn->close();
         </div>
     </div>
 </div>
-<?php include 'includes/modals/modal_venda_rapida.php'; ?>
 
-<script src="assets/js/scripts.js?v=1"></script>
 <style>
     /* Estilos para a barra de progresso da taxa de fechamento */
     .progress-indicator {
@@ -453,13 +471,11 @@ $conn->close();
         align-items: center;
         justify-content: center;
         border-radius: 12px;
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
+        width: 54px;
+        height: 54px;
+        font-size: 22px;
     }
 </style>
-
-
 
 <?php 
 require_once 'includes/footer.php';

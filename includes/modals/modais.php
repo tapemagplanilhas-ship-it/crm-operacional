@@ -14,6 +14,20 @@
                 <input type="text" id="cliente-nome" name="nome" required 
                        placeholder="Digite o nome do cliente">
             </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cliente-empresa">Nome da empresa</label>
+                    <input type="text" id="cliente-empresa" name="empresa"
+                           placeholder="Nome da empresa">
+                </div>
+
+                <div class="form-group">
+                    <label for="cliente-documento">CNPJ/CPF</label>
+                    <input type="text" id="cliente-documento" name="documento"
+                           placeholder="00.000.000/0000-00 ou 000.000.000-00">
+                </div>
+            </div>
             
             <div class="form-row">
                 <div class="form-group">
@@ -111,11 +125,19 @@
             
             <div class="form-group">
                 <label for="venda-status" class="required">Status</label>
-                <select id="venda-status" name="status" required>
+                <select id="venda-status" name="status" required onchange="mostrarCampoMotivoPerdaVenda()">
                     <option value="concluida">Concluída</option>
                     <option value="orcamento">Orçamento</option>
                     <option value="cancelada">Cancelada</option>
                 </select>
+            </div>
+
+            <div class="form-group" id="campo-codigo-orcamento">
+                <label for="venda-codigo-orcamento">Código do Orçamento</label>
+                <input type="text" id="venda-codigo-orcamento" name="codigo_orcamento"
+                       placeholder="Ex: 12345" inputmode="numeric"
+                       oninput="limparNaoNumericos(this)">
+                <small class="field-hint">Opcional, apenas números</small>
             </div>
             
             <div class="form-group">

@@ -31,6 +31,7 @@ if (window.sidebarLoaded) {
         // Elementos do dropdown
         const actionsToggle = document.getElementById('actionsToggle');
         const actionsDropdown = document.getElementById('actionsDropdown');
+        const avatarToggle = document.querySelector('.profile-avatar-small');
 
         // Estado
         let isExpanded = false;
@@ -126,7 +127,7 @@ if (window.sidebarLoaded) {
         function initDropdown() {
             console.log('🎯 Inicializando dropdown...');
 
-            if (!actionsToggle || !actionsDropdown) {
+            if (!actionsDropdown) {
                 console.error('❌ Elementos do dropdown não encontrados!');
                 return;
             }
@@ -140,33 +141,45 @@ if (window.sidebarLoaded) {
             dropdownItems.forEach(item => {
                 // Logout - confirmar
                 if (item.classList.contains('logout-item')) {
-                    item.addEventListener('click', function (e) {
+                    item.addEventListener('click', async function (e) {
                         e.preventDefault();
-                        if (confirm('Tem certeza que deseja sair?')) {
-                            window.location.href = this.href;
-                        }
+                        if (typeof window.abrirModalConfirmacao !== 'function') return;
+                        const confirmar = await window.abrirModalConfirmacao({
+                            title: 'Confirmar saída',
+                            message: 'Tem certeza que deseja sair?',
+                            confirmText: 'Sair',
+                            cancelText: 'Cancelar'
+                        });
+                        if (confirmar) window.location.href = this.href;
                         hideDropdown();
                     });
                 }
             });
 
-            // Mostrar/ocultar dropdown
-            actionsToggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                e.preventDefault();
+            // Mostrar/ocultar dropdown (botão 3 pontos, quando visível)
+            if (actionsToggle) {
+                actionsToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleDropdown(actionsToggle);
+                });
+            }
 
-                if (isDropdownOpen) {
-                    hideDropdown();
-                } else {
-                    showDropdown();
-                }
-            });
+            // Mostrar/ocultar dropdown pelo avatar
+            if (avatarToggle) {
+                avatarToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleDropdown(avatarToggle);
+                });
+            }
 
             // Fechar dropdown ao clicar fora
             document.addEventListener('click', function (e) {
                 if (isDropdownOpen &&
                     !actionsDropdown.contains(e.target) &&
-                    !actionsToggle.contains(e.target)) {
+                    (!actionsToggle || !actionsToggle.contains(e.target)) &&
+                    (!avatarToggle || !avatarToggle.contains(e.target))) {
                     hideDropdown();
                 }
             });
@@ -183,16 +196,47 @@ if (window.sidebarLoaded) {
 
         }
 
-        function showDropdown() {
+        function toggleDropdown(anchor) {
+            if (isDropdownOpen) {
+                hideDropdown();
+            } else {
+                showDropdown(anchor);
+            }
+        }
+
+        function showDropdown(anchor) {
             if (!actionsDropdown) return;
 
             // Mostrar utilizando a classe 'show' (CSS usa !important)
             actionsDropdown.classList.add('show');
             isDropdownOpen = true;
 
-            // z-index é controlado pelo CSS; não é necessário ajustar inline
+            // Posicionar ao lado do elemento clicado (avatar ou botao)
+            const target = anchor || actionsToggle || avatarToggle;
+            if (target) {
+                const gap = 8;
+                const rect = target.getBoundingClientRect();
 
-            console.log('📌 Dropdown ABERTO');
+                const dropdownWidth = actionsDropdown.offsetWidth || 200;
+                const dropdownHeight = actionsDropdown.offsetHeight || 160;
+
+                let left = rect.right + gap;
+                let top = rect.bottom - dropdownHeight;
+
+                if (left + dropdownWidth > window.innerWidth - gap) {
+                    left = rect.left - dropdownWidth - gap;
+                }
+                if (left < gap) left = gap;
+
+                if (top + dropdownHeight > window.innerHeight - gap) {
+                    top = window.innerHeight - dropdownHeight - gap;
+                }
+                if (top < gap) top = gap;
+
+                actionsDropdown.style.setProperty('--dropdown-left', `${Math.round(left)}px`);
+                actionsDropdown.style.setProperty('--dropdown-top', `${Math.round(top)}px`);
+            }
+
         }
 
         function hideDropdown() {
@@ -202,7 +246,6 @@ if (window.sidebarLoaded) {
             actionsDropdown.classList.remove('show');
             isDropdownOpen = false;
 
-            console.log('📌 Dropdown FECHADO');
         }
 
         // ============================================
@@ -229,6 +272,7 @@ if (window.sidebarLoaded) {
             expand: expandSidebar,
             collapse: collapseSidebar,
             toggle: toggleSidebar,
+            toggleDropdown: toggleDropdown,
             showDropdown: showDropdown,
             hideDropdown: hideDropdown
         };

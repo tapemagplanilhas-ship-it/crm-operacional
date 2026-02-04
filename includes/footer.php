@@ -17,6 +17,15 @@
     if (file_exists('includes/modals/modal_venda_rapida.php')) {
         include 'includes/modals/modal_venda_rapida.php';
     }
+    if (file_exists('includes/modals/modal_venda_detalhes.php')) {
+        include 'includes/modals/modal_venda_detalhes.php';
+    }
+    if (file_exists('includes/modals/modal_cliente_detalhes.php')) {
+        include 'includes/modals/modal_cliente_detalhes.php';
+    }
+    if (file_exists('includes/modals/modal_confirmacao.php')) {
+        include 'includes/modals/modal_confirmacao.php';
+    }
     ?>
     
     <!-- Toast Container para feedback -->

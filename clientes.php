@@ -6,10 +6,10 @@ require_once 'includes/header.php';
 <div class="page-header">
     <h2><i class="fas fa-user-friends"></i> Clientes</h2>
     <div class="page-actions">
-        <button class="btn-primary" onclick="abrirModalCliente()">
+        <button type="button" class="btn-primary" data-action="novo-cliente">
             <i class="fas fa-user-plus"></i> Novo Cliente
         </button>
-        <button class="btn-success" onclick="abrirModalVendaRapida()">
+        <button type="button" class="btn-success" data-action="venda-rapida">
             <i class="fas fa-bolt"></i> Venda Rápida
         </button>
     </div>
@@ -24,7 +24,7 @@ require_once 'includes/header.php';
 </div>
 
 <!-- Tabela de Clientes com ordenação -->
-<div class="table-responsive">
+<div class="table-responsive table-responsive-clientes">
     <table class="data-table sortable" id="tabela-clientes">
         <thead>
             <tr>
@@ -126,6 +126,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <div class="actions-dropdown">
+                            <button onclick="abrirModalClienteDetalhes(${cliente.id})">
+                                <i class="fas fa-eye"></i> Ver Cliente
+                            </button>
                             <button onclick="abrirModalCliente(${cliente.id})">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
@@ -169,16 +172,35 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fechar todos
         document.querySelectorAll('.actions-dropdown.show').forEach(d => {
             d.classList.remove('show');
+            d.classList.remove('drop-up');
         });
         
         // Abrir/fechar atual
         if (!isShowing) {
             dropdown.classList.add('show');
-            
+
+            requestAnimationFrame(() => {
+                const rect = dropdown.getBoundingClientRect();
+                const footer = document.querySelector('.main-footer');
+                const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
+                const viewportPadding = 8;
+                const limit = Math.min(window.innerHeight, footerTop);
+                const spaceBelow = limit - rect.top;
+                const spaceAbove = rect.top;
+                const needed = dropdown.offsetHeight + viewportPadding;
+
+                if (needed > spaceBelow && spaceAbove > spaceBelow) {
+                    dropdown.classList.add('drop-up');
+                } else {
+                    dropdown.classList.remove('drop-up');
+                }
+            });
+
             setTimeout(() => {
                 const closeDropdown = (e) => {
                     if (!dropdown.contains(e.target) && e.target !== button) {
                         dropdown.classList.remove('show');
+                        dropdown.classList.remove('drop-up');
                         document.removeEventListener('click', closeDropdown);
                     }
                 };
@@ -189,9 +211,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Função para excluir cliente
     window.excluirCliente = async function(clienteId) {
-        if (!confirm('Tem certeza que deseja excluir este cliente?')) {
-            return;
-        }
+        if (typeof window.confirmarExclusao !== 'function') return;
+        const confirmado = await window.confirmarExclusao('Tem certeza que deseja excluir este cliente?');
+        if (!confirmado) return;
         
         try {
             const response = await fetch(`api/clientes.php?id=${clienteId}`, {
