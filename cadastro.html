@@ -137,7 +137,21 @@
                                     </div>
                                     <div id="password-match" class="password-match"></div>
                                 </div>
-                                
+                                <!-- Adicione este campo de seleção de perfil no formulário HTML -->
+                                <!-- Adicione este campo ao seu formulário existente -->
+                                <div class="field padding-bottom--24">
+                                    <label for="perfil">Perfil</label>
+                                    <select id="perfil" name="perfil" class="form-control" required>
+                                        <option value="vendedor" selected>Vendedor</option>
+                                        <option value="estoque">Estoque</option>
+                                        <option value="rh">Recursos Humanos</option>
+                                        <option value="financeiro">Financeiro</option>
+                                        <option value="caixa">Caixa</option>
+                                        <option value="recebimento">Recebimento</option>
+                                        <option value="gerencia">Gerência</option>
+                                        <option value="admin">Administrador</option>
+                                    </select>
+                                </div>      
                                 <div class="field padding-bottom--24">
                                     <input type="submit" name="submit" value="Cadastrar" class="btn-submit">
                                 </div>

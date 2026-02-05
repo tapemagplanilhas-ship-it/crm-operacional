@@ -1,0 +1,77 @@
+/* ajuda.css */
+.help-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.help-section h4 {
+    color: #d10101;
+    margin-bottom: 15px;
+}
+
+.help-table {
+    margin-top: 15px;
+}
+
+.help-table th {
+    background-color: #e9ecef;
+}
+
+.help-list {
+    padding-left: 20px;
+}
+
+.help-list li {
+    margin-bottom: 10px;
+}
+
+.badge-admin {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-gerencia {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.badge-vendedor {
+    background-color: #007bff;
+    color: white;
+}
+
+.badge-estoque {
+    background-color: #6f42c1;
+    color: white;
+}
+
+.badge-rh {
+    background-color: #20c997;
+    color: white;
+}
+
+.badge-financeiro {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.badge-caixa {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-recebimento {
+    background-color: #28a745;
+    color: white;
+}
+
+.accordion .card-header {
+    background-color: #f1f1f1;
+}
+
+.accordion .btn-link {
+    color: #d10101;
+    text-decoration: none;
+}

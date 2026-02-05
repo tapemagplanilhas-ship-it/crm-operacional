@@ -39,11 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
                     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
                     
-                    $sql_log = "INSERT INTO logs_acesso (usuario_id, ip, user_agent, tipo) 
-                                VALUES (?, ?, ?, 'login')";
-                    $stmt_log = $conn->prepare($sql_log);
-                    $stmt_log->bind_param("iss", $user['id'], $ip, $user_agent);
-                    $stmt_log->execute();
+                    // $sql_log = "INSERT INTO logs_acesso (usuario_id, ip, user_agent, tipo) 
+                    //             VALUES (?, ?, ?, 'login')";
+                    // $stmt_log = $conn->prepare($sql_log);
+                    // $stmt_log->bind_param("iss", $user['id'], $ip, $user_agent);
+                    // $stmt_log->execute();
                     
                     header('Location: index.php');
                     exit;

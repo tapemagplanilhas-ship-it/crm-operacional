@@ -3,10 +3,10 @@ session_start();
 ob_start();
 require_once 'includes/config.php';
 
-// Verificar autenticação e permissões
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: login.php');
-    ob_end_flush();
+// Verificar se é admin
+if ($_SESSION['perfil'] !== 'admin') {
+    $_SESSION['mensagem_erro'] = 'Acesso negado!';
+    header('Location: index.php');
     exit;
 }
 
@@ -145,6 +145,11 @@ function showEditForm($userId) {
                                 <option value="admin" <?= $user['perfil'] === 'admin' ? 'selected' : '' ?>>Administrador</option>
                                 <option value="gerencia" <?= $user['perfil'] === 'gerencia' ? 'selected' : '' ?>>Gerência</option>
                                 <option value="vendedor" <?= $user['perfil'] === 'vendedor' ? 'selected' : '' ?>>Vendedor</option>
+                                <option value="estoque" <?= $user['perfil'] === 'estoque' ? 'selected' : '' ?>>Estoque</option>
+                                <option value="rh" <?= $user['perfil'] === 'rh' ? 'selected' : '' ?>>Recursos Humanos</option>
+                                <option value="financeiro" <?= $user['perfil'] === 'financeiro' ? 'selected' : '' ?>>Financeiro</option>
+                                <option value="caixa" <?= $user['perfil'] === 'caixa' ? 'selected' : '' ?>>Caixa</option>
+                                <option value="recebimento" <?= $user['perfil'] === 'recebimento' ? 'selected' : '' ?>>Recebimento</option>
                             </select>
                         </div>
                         
@@ -546,6 +551,30 @@ body {
 .badge-vendedor {
     background-color: #cfe2ff;
     color: #084298;
+}
+.badge-estoque {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.badge-rh {
+    background-color: #d6d8db;
+    color: #1b1e21;
+}
+
+.badge-financeiro {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.badge-caixa {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-recebimento {
+    background-color: #d4edda;
+    color: #155724;
 }
 
 .status-ativo {

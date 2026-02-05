@@ -18,9 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuario = trim($_POST['usuario'] ?? '');
     $senha = $_POST['senha'] ?? '';
     $confirmar_senha = $_POST['confirmar_senha'] ?? '';
+    $perfil = $_POST['perfil'] ?? 'vendedor'; // Novo campo de perfil
     
     // Validações
-    if (empty($nome) || empty($email) || empty($usuario) || empty($senha)) {
+    if (empty($nome) || empty($email) || empty($usuario) || empty($senha) || empty($perfil)) {
         $erro = 'Todos os campos são obrigatórios';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $erro = 'E-mail inválido';
@@ -28,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erro = 'A senha deve ter no mínimo 8 caracteres';
     } elseif ($senha !== $confirmar_senha) {
         $erro = 'As senhas não coincidem';
+    } elseif (!in_array($perfil, ['vendedor', 'estoque', 'rh', 'financeiro', 'caixa', 'recebimento', 'gerencia', 'admin'])) {
+        $erro = 'Perfil inválido';
     } else {
         $conn = getConnection();
         
@@ -45,11 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Hash da senha
                 $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
                 
-                // Inserir novo usuário
+                // Inserir novo usuário com perfil
                 $sql_insert = "INSERT INTO usuarios (nome, email, usuario, senha, perfil, status) 
-                               VALUES (?, ?, ?, ?, 'user', 'ativo')";
+                               VALUES (?, ?, ?, ?, ?, 'ativo')";
                 $stmt_insert = $conn->prepare($sql_insert);
-                $stmt_insert->bind_param("ssss", $nome, $email, $usuario, $senha_hash);
+                $stmt_insert->bind_param("sssss", $nome, $email, $usuario, $senha_hash, $perfil);
                 
                 if ($stmt_insert->execute()) {
                     $sucesso = 'Cadastro realizado com sucesso! Redirecionando para login...';
@@ -66,6 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Carrega o template HTML
+// HTML do formulário (mantendo seu layout atual)
 require 'cadastro.html';
 ?>
