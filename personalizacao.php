@@ -93,17 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label>Cor Secundária</label>
                 <input type="color" name="config[cor_secundaria]" value="<?= $configuracoes['cor_secundaria'] ?? '#10b981' ?>" class="form-control">
             </div>
-            
-            <div class="form-group">
-                <label>Logo do Sistema</label>
-                <input type="file" name="logo" id="logo-upload" class="form-control" accept="image/*">
-                <small class="form-text">Envie uma nova imagem para substituir o logo atual</small>
-                <?php if (!empty($configuracoes['logo_path'])): ?>
-                <div class="current-logo">
-                    <img src="<?= htmlspecialchars($configuracoes['logo_path']) ?>" alt="Logo Atual" style="max-width: 200px; margin-top: 10px;">
-                </div>
-                <?php endif; ?>
-            </div>
         </div>
 
         <div class="tab-content" id="campos">
