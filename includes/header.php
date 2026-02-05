@@ -527,3 +527,5 @@ $usuario_logado = getUsuarioLogado();
 <!-- Conteúdo Principal -->
 <main class="container">
     <script src="assets/js/sidebar.js"></script>
+    <!-- Adicione no <head> do header.php -->
+<link rel="stylesheet" href="assets/css/tema_<?= $_SESSION['tema'] ?>.css">

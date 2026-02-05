@@ -45,6 +45,13 @@ $paginas = [
         'perfis' => ['admin']
     ],
     [
+        'id' => 'relatorios_especializados',
+        'nome' => 'Relatórios Espec.',
+        'icone' => 'fas fa-chart-pie',
+        'url' => 'relatorios_especializados.php',
+        'perfis' => ['admin', 'gerencia', 'vendedor'],
+    ],
+    [
         'id' => 'usuarios',
         'nome' => 'Usuários',
         'icone' => 'fas fa-user-cog',
@@ -88,21 +95,22 @@ $email = htmlspecialchars($usuario_logado['email']);
 
 <!-- Sidebar Principal -->
 <aside class="sidebar" id="sidebar">
-<!-- Logo como botão de expandir/retrair -->
-<div class="sidebar-logo-toggle" id="sidebarToggle">
-    <div class="logo-container">
-        <!-- Logo pequena (para sidebar retraída) -->
-        <img src="assets/images/logo-tapemag.png" alt="CRM TAPEMAG" class="logo-small">
-        
-        <!-- Logo completa (para sidebar expandida) -->
-        <img src="assets/images/logo-tapeemaag-cmpt.png" alt="CRM TAPEMAG" class="logo-full">
-        
-        <!-- Ícone de hover (para expandir/retrair) -->
-        <div class="logo-hover-icon">
-            <i class="fas fa-bars"></i>
+    <!-- Logo como botão de expandir/retrair -->
+    <div class="sidebar-logo-toggle" id="sidebarToggle">
+        <div class="logo-container">
+            <!-- Logo pequena (para sidebar retraída) -->
+            <img src="assets/images/logo-tapemag.png" alt="CRM TAPEMAG" class="logo-small">
+            
+            <!-- Logo completa (para sidebar expandida) -->
+            <img src="assets/images/logo-tapeemaag-cmpt.png" alt="CRM TAPEMAG" class="logo-full">
+            
+            <!-- Ícone de hover (para expandir/retrair) -->
+            <div class="logo-hover-icon">
+                <i class="fas fa-bars"></i>
+            </div>
         </div>
     </div>
-</div>
+    
     <!-- Menu de Navegação -->
     <nav class="sidebar-nav">
         <ul class="nav-list">
@@ -112,8 +120,9 @@ $email = htmlspecialchars($usuario_logado['email']);
                 $ativa = ($pagina_atual == $pagina_arquivo || 
                          ($pagina['id'] == 'dashboard' && $pagina_atual == 'index.php') ||
                          ($pagina['id'] == 'dashboard' && empty($pagina_atual)));
+                $destaque = $pagina['destaque'] ?? false;
             ?>
-            <li class="nav-item <?php echo $ativa ? 'active' : ''; ?>">
+            <li class="nav-item <?php echo $ativa ? 'active' : ''; ?> <?php echo $destaque ? 'destaque-item' : ''; ?>">
                 <a href="<?php echo $pagina['url']; ?>" 
                    class="nav-link"
                    title="<?php echo $pagina['nome']; ?>"
@@ -132,45 +141,45 @@ $email = htmlspecialchars($usuario_logado['email']);
             <!-- Avatar e informações do usuário -->
             <div class="profile-info">
                 <div class="profile-avatar-small" data-tooltip="<?php echo $nome_completo; ?>">
-    <?php if (isset($usuario_logado['foto']) && !empty($usuario_logado['foto'])): ?>
-        <img src="<?php echo htmlspecialchars($usuario_logado['foto']); ?>" alt="<?php echo $nome_completo; ?>">
-    <?php else: ?>
-        <div class="avatar-iniciais-small"><?php echo $iniciais; ?></div>
-    <?php endif; ?>
-</div>
+                    <?php if (isset($usuario_logado['foto']) && !empty($usuario_logado['foto'])): ?>
+                        <img src="<?php echo htmlspecialchars($usuario_logado['foto']); ?>" alt="<?php echo $nome_completo; ?>">
+                    <?php else: ?>
+                        <div class="avatar-iniciais-small"><?php echo $iniciais; ?></div>
+                    <?php endif; ?>
+                </div>
                 <div class="profile-details">
                     <div class="profile-name-small"><?php echo $nome_completo; ?></div>
                     <div class="profile-role-small"><?php echo $perfil_nome; ?></div>
                 </div>
             </div>
             
-           <!-- Botão de ações (3 pontos) -->
-<button class="actions-toggle" id="actionsToggle">
-    <i class="fas fa-ellipsis-v"></i>
-</button>
+            <!-- Botão de ações (3 pontos) -->
+            <button class="actions-toggle" id="actionsToggle">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
 
-<!-- Dropdown menu -->
-<div class="actions-dropdown" id="actionsDropdown">
-    <a href="configuracoes.php" class="dropdown-item">
-        <i class="fas fa-cog"></i>
-        <span>Configurações</span>
-    </a>
-    <a href="personalizacao.php" class="dropdown-item">
-        <i class="fas fa-palette"></i>
-        <span>Personalização</span>
-    </a>
-    <a href="ajuda.php" class="dropdown-item">
-        <i class="fas fa-question-circle"></i>
-        <span>Ajuda</span>
-    </a>
-    <div class="dropdown-divider"></div>
-    <a href="logout.php" class="dropdown-item logout-item">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Sair</span>
-    </a>
-</div>
+            <!-- Dropdown menu -->
+            <div class="actions-dropdown" id="actionsDropdown">
+                <a href="configuracoes.php" class="dropdown-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Configurações</span>
+                </a>
+                <a href="personalizacao.php" class="dropdown-item">
+                    <i class="fas fa-palette"></i>
+                    <span>Personalização</span>
+                </a>
+                <a href="ajuda.php" class="dropdown-item">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Ajuda</span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="logout.php" class="dropdown-item logout-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sair</span>
+                </a>
             </div>
         </div>
+    </div>
 </aside>
 
 <!-- Overlay para mobile -->
@@ -181,7 +190,15 @@ $email = htmlspecialchars($usuario_logado['email']);
     <i class="fas fa-bars"></i>
 </button>
 
-<!-- Incluir JavaScript da Sidebar -->
+<style>
+/* Estilos para o novo item destacado */
+.destaque-item {
+    position: relative;
+}
+
+.destaque-item .nav-link {
+    background-color: rgba(79, 70, 229, 0.1);
+}
+</style>
+
 <script src="assets/js/sidebar.js"></script>
-
-

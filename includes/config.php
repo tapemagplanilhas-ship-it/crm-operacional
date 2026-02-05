@@ -292,3 +292,7 @@ function registrarLog($acao, $sucesso = true, $detalhes = null) {
     
     $conn->close();
 }
+// Configuração padrão do tema
+if (!isset($_SESSION['tema'])) {
+    $_SESSION['tema'] = 'claro'; // Tema padrão
+}

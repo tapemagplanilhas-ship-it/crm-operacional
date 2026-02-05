@@ -203,13 +203,20 @@ if ($motivos_conn) {
             <div class="form-group">
                 <label for="filtro-mes">Ms</label>
                 <select id="filtro-mes" name="mes" class="form-control" onchange="this.form.submit()">
-                    <?php for ($i = 1; $i <= 12; $i++): ?>
-                        <option value="<?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>" 
-                                <?= $filtro_mes == str_pad($i, 2, '0', STR_PAD_LEFT) ? 'selected' : '' ?>>
-                            <?= DateTime::createFromFormat('!m', $i)->format('F') ?>
-                        </option>
-                    <?php endfor; ?>
-                </select>
+    <?php 
+    $meses_ptbr = [
+        1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
+        5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
+        9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'
+    ];
+    
+    foreach ($meses_ptbr as $num => $nome): ?>
+        <option value="<?= str_pad($num, 2, '0', STR_PAD_LEFT) ?>" 
+                <?= $filtro_mes == str_pad($num, 2, '0', STR_PAD_LEFT) ? 'selected' : '' ?>>
+            <?= $nome ?>
+        </option>
+    <?php endforeach; ?>
+</select>
             </div>
             
             <div class="form-group">
