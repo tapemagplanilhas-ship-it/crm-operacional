@@ -104,6 +104,11 @@ if ($result) {
                     <option value="admin">Administrador</option>
                     <option value="gerencia">Gerência</option>
                     <option value="vendedor">Vendedor</option>
+                    <option value="estoque">Estoque</option>
+                    <option value="rh">Recursos Humanos</option>
+                    <option value="caixa">Caixa</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="recebimento">Recebimento</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 15px; align-items: center">Adicionar Usuário</button>

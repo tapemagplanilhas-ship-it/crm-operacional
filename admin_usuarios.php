@@ -568,8 +568,8 @@ body {
 }
 
 .badge-caixa {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #d6dfe2;
+    color: #4d8385;
 }
 
 .badge-recebimento {

@@ -82,6 +82,7 @@ if (!$usuario) exit('Usuário não encontrado');
             <option value="vendedor" <?= $usuario['perfil']=='vendedor'?'selected':'' ?>>Vendedor</option>
             <option value="gerencia" <?= $usuario['perfil']=='gerencia'?'selected':'' ?>>Gerência</option>
             <option value="admin" <?= $usuario['perfil']=='admin'?'selected':'' ?>>Administrador</option>
+            <option value="estoque" <?= $usuario['perfil']=='estoque'?'selected':'' ?>>Estoque</option>
           </select>
         </div>
       </div>
