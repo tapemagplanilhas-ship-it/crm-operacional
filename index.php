@@ -8,6 +8,11 @@ verificarLogin();
 // requerirPermissao('gerencia'); // Para páginas de gerência
 ?> */
 
+if (!acessoPermitido('dashboard')) {
+    include 'acesso_negado.php';
+    exit;
+}
+
 $usuarioId = $_SESSION['usuario_id'] ?? null;
 $perfil = $_SESSION['perfil'] ?? null;
 

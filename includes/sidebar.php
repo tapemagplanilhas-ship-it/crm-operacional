@@ -75,8 +75,8 @@ $paginas = [
 ];
 
 // Filtrar páginas baseado no perfil do usuário
-$paginas_permitidas = array_filter($paginas, function($pagina) use ($usuario_logado) {
-    return in_array($usuario_logado['perfil'], $pagina['perfis']);
+$paginas_permitidas = array_filter($paginas, function($pagina) {
+    return acessoPermitido($pagina['id']);
 });
 
 // Mapear nomes dos perfis

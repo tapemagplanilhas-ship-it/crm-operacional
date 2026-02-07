@@ -296,3 +296,19 @@ function registrarLog($acao, $sucesso = true, $detalhes = null) {
 if (!isset($_SESSION['tema'])) {
     $_SESSION['tema'] = 'claro'; // Tema padrão
 }
+// =============================================
+// SISTEMA DE PERMISSÕES – ACESSO POR PÁGINA
+// =============================================
+require_once __DIR__ . "/permissoes.php";
+
+function acessoPermitido($pagina)
+{
+    if (!isset($_SESSION['perfil'])) return false;
+
+    global $permissoes;
+    $perfil = $_SESSION['perfil'];
+
+    if (!isset($permissoes[$perfil])) return false;
+
+    return in_array($pagina, $permissoes[$perfil]);
+}
