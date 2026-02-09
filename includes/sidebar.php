@@ -65,13 +65,13 @@ $paginas = [
         'url' => 'gestao.php',
         'perfis' => ['admin', 'gerencia']
     ],
-    [
-        'id' => 'configuracoes',
-        'nome' => 'Configurações',
-        'icone' => 'fas fa-cog',
-        'url' => 'configuracoes.php',
-        'perfis' => ['admin', 'gerencia', 'vendedor']
-    ],
+    // [
+    //     'id' => 'configuracoes',
+    //     'nome' => 'Configurações',
+    //     'icone' => 'fas fa-cog',
+    //     'url' => 'configuracoes.php',
+    //     'perfis' => ['admin', 'gerencia', 'vendedor']
+    // ],
 ];
 
 // Filtrar páginas baseado no perfil do usuário
@@ -83,7 +83,12 @@ $paginas_permitidas = array_filter($paginas, function($pagina) {
 $nomes_perfis = [
     'admin' => 'Administrador',
     'gerencia' => 'Gestor',
-    'vendedor' => 'Vendedor'
+    'vendedor' => 'Vendedor',
+    'financeiro' => 'Financeiro',
+    'caixa' => 'Caixa',
+    'recebimento' => 'Recebimento',
+    'rh' => 'Recursos Humanos',
+    'estoque' => 'Estoque'
 ];
 
 // Obter iniciais para avatar
@@ -164,10 +169,10 @@ $email = htmlspecialchars($usuario_logado['email']);
                     <i class="fas fa-cog"></i>
                     <span>Configurações</span>
                 </a>
-                <a href="personalizacao.php" class="dropdown-item">
+                <!-- <a href="personalizacao.php" class="dropdown-item">
                     <i class="fas fa-palette"></i>
                     <span>Personalização</span>
-                </a>
+                </a> -->
                 <a href="ajuda.php" class="dropdown-item">
                     <i class="fas fa-question-circle"></i>
                     <span>Ajuda</span>
