@@ -27,7 +27,8 @@
                     <label for="cliente-documento">CNPJ/CPF</label>
                     <input type="text" id="cliente-documento" name="documento"
                            placeholder="00.000.000/0000-00 ou 000.000.000-00"
-                           oninput="verificarAlteracoesCliente()">
+                           oninput="formatarDocumento(this); verificarAlteracoesCliente()"
+                           maxlength="18">
                 </div>
             </div>
             
@@ -35,8 +36,9 @@
                 <div class="form-group">
                     <label for="cliente-telefone">Telefone</label>
                     <input type="tel" id="cliente-telefone" name="telefone" 
-                           placeholder="(11) 99999-9999"
-                           oninput="verificarAlteracoesCliente()">
+                           placeholder="(00) 00000-0000"
+                           oninput="formatarTelefone(this); verificarAlteracoesCliente()"
+                           maxlength="15">
                 </div>
                 
                 <div class="form-group">
@@ -100,3 +102,118 @@
         </form>
     </div>
 </div>
+
+<script>
+// Função para formatar CPF/CNPJ
+function formatarDocumento(input) {
+    let value = input.value.replace(/\D/g, '');
+    
+    if (value.length <= 11) {
+        // Formata CPF (000.000.000-00)
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        // Formata CNPJ (00.000.000/0000-00)
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    
+    input.value = value;
+}
+
+// Função para formatar telefone
+function formatarTelefone(input) {
+    let value = input.value.replace(/\D/g, '');
+    
+    if (value.length > 10) {
+        // Formato para celular (11) 99999-9999
+        value = value.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+    } else if (value.length > 6) {
+        // Formato para telefone fixo (11) 9999-9999
+        value = value.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+    } else if (value.length > 2) {
+        value = value.replace(/^(\d{2})(\d+)/, '($1) $2');
+    }
+    
+    input.value = value;
+}
+</script>
+
+<style>
+/* Estilos para os campos formatados */
+input[type="text"], 
+input[type="tel"],
+input[type="email"] {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+    width: 100%;
+}
+
+input[type="text"]:focus, 
+input[type="tel"]:focus,
+input[type="email"]:focus {
+    border-color: #d10101;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(209, 1, 1, 0.1);
+}
+
+.readonly-field {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-primary {
+    background-color: #d10101;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #b00000;
+}
+
+.btn-secondary {
+    background-color: #666;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+    background-color: #555;
+}
+</style>
