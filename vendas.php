@@ -24,9 +24,22 @@ $filtro_ano = $_GET['ano'] ?? date('Y');
 if ($conn) {
     try {
         // Construir query com filtros
-        $where = "WHERE 1=1";
-        $params = [];
-        $types = "";
+        // Na parte da construção da query SQL:
+    $where = "WHERE 1=1";
+    $params = [];
+    $types = "";
+
+// Filtro por vendedor (apenas para admin/gerencia)
+    if (in_array($perfil_usuario, ['admin', 'gerencia']) && !empty($_GET['vendedor']) && $_GET['vendedor'] !== 'todos') {
+    $where .= " AND v.usuario_id = ?";
+    $params[] = (int)$_GET['vendedor'];
+    $types .= "i";
+    } elseif ($perfil_usuario === 'vendedor') {
+    // Vendedor comum só vê suas próprias vendas
+    $where .= " AND v.usuario_id = ?";
+    $params[] = $usuario_id;
+    $types .= "i";
+    }
         
         if ($filtro_status !== 'todos') {
             $where .= " AND v.status = ?";
@@ -1452,9 +1465,10 @@ function getCellValueVendas(row, sortBy) {
         'data_venda': 0,
         'cliente_nome': 1,
         'valor': 2,
-        'status': 3,
-        'forma_pagamento': 4,
-        'data_registro': 5
+        'vendedor': 3,
+        'status': 4,
+        'forma_pagamento': 5,
+        'data_registro': 6
     };
     
     const cellIndex = columnMap[sortBy];
