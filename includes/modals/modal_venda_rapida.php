@@ -44,11 +44,12 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="venda-rapida-valor" class="required">Valor</label>
-                    <input type="text" id="venda-rapida-valor" name="valor" required 
-                           placeholder="R$ 0,00" class="money-input"
-                           oninput="formatarMoeda(this)">
-                </div>
+                <label for="venda-rapida-valor" class="required">Valor</label>
+                <input type="text" id="venda-rapida-valor" name="valor" required 
+               placeholder="R$ 0,00" class="money-input"
+               oninput="formatarMoeda(this)"
+               style="text-align: left; padding-left: 15px;">
+            </div>
                 
                 <div class="form-group">
                     <label for="venda-rapida-data" class="required">Data da Negociação</label>
