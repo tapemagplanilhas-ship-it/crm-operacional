@@ -188,6 +188,28 @@ if ($motivos_conn) {
 <div class="filters-card">
     <h3><i class="fas fa-filter"></i> Filtros</h3>
     
+    <?php if (in_array($perfil_usuario, ['admin', 'gerencia'])): ?>
+    <div class="form-group">
+        <label for="filtro-vendedor">Vendedor</label>
+        <select id="filtro-vendedor" name="vendedor" class="form-control" onchange="this.form.submit()">
+            <option value="todos" <?= ($_GET['vendedor'] ?? 'todos') === 'todos' ? 'selected' : '' ?>>Todos Vendedores</option>
+            <?php
+            $conn_vendedores = getConnection();
+            $vendedores = [];
+            if ($conn_vendedores) {
+                $result = $conn_vendedores->query("SELECT id, nome FROM usuarios WHERE perfil = 'vendedor' ORDER BY nome");
+                while ($row = $result->fetch_assoc()) {
+                    $vendedores[] = $row;
+                    $selected = ($_GET['vendedor'] ?? '') == $row['id'] ? 'selected' : '';
+                    echo "<option value='{$row['id']}' $selected>{$row['nome']}</option>";
+                }
+                $conn_vendedores->close();
+            }
+            ?>
+        </select>
+    </div>
+    <?php endif; ?>
+
     <form id="filtros-vendas" method="GET" class="filters-form">
         <div class="form-row">
             <div class="form-group">
@@ -250,6 +272,9 @@ if ($motivos_conn) {
                 </th>
                 <th class="sortable-header" data-sort="valor" data-order="desc">
                     Valor <i class="fas fa-sort"></i>
+                </th>
+                <th class="sortable-header" data-sort="vendedor" data-order="desc">
+                    Vendedor <i class="fas fa-sort"></i>
                 </th>
                 <th class="sortable-header" data-sort="status" data-order="">
                     Status <i class="fas fa-sort"></i>
@@ -505,6 +530,20 @@ if ($motivos_conn) {
 
 <style>
     /* Estilos especficos para a pgina de vendas */
+    #filtro-vendedor {
+        min-width: 180px;
+        width: 913px;
+    }
+
+    @media (max-width: 768px) {
+        .filters-form .form-row {
+            flex-direction: column;
+        }
+    
+        #filtro-vendedor {
+            width: 100%;
+        }
+    }
     .filters-card {
         background: white;
         border-radius: 12px;

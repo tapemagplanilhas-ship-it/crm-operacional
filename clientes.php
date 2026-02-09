@@ -3,6 +3,7 @@ require_once 'includes/config.php';
 require_once 'includes/header.php';
 ?>
 
+<link rel="stylesheet" href="assets/css/clientes.css">
 <div class="page-header">
     <h2><i class="fas fa-user-friends"></i> Clientes</h2>
     <div class="page-actions">

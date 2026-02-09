@@ -36,7 +36,8 @@
                     <label for="venda-valor" class="required">Valor</label>
                     <input type="text" id="venda-valor" name="valor" required 
                            placeholder="R$ 0,00" class="money-input"
-                           oninput="formatarMoeda(this)">
+                           oninput="formatarMoeda(this)"
+                           style="text-align: left; padding-left: 15px;">
                 </div>
                 
                 <div class="form-group">
