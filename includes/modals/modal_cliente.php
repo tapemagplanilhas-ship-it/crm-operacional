@@ -95,9 +95,12 @@
                         onclick="fecharModal('cliente')">
                     Cancelar
                 </button>
+               
                 <button type="submit" class="btn-primary" id="btn-salvar-cliente">
                     <i class="fas fa-save"></i> Salvar Cliente
                 </button>
+
+
             </div>
         </form>
     </div>
@@ -140,6 +143,7 @@ function formatarTelefone(input) {
     
     input.value = value;
 }
+
 </script>
 
 <style>
@@ -215,5 +219,21 @@ input[type="email"]:focus {
 
 .btn-secondary:hover {
     background-color: #555;
+}
+#btn-salvar-cliente {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  transition: all 0.3s ease;
+}
+
+#btn-salvar-cliente:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.fa-spinner {
+  margin-right: 8px;
 }
 </style>

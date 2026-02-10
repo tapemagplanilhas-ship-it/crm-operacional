@@ -1349,12 +1349,53 @@ window.abrirModalCliente = abrirModalCliente;
       return;
     }
 
-    const btnSalvar = document.getElementById('btn-salvar-cliente');
-    if (btnSalvar) {
-      btnSalvar.disabled = true;
-      btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-    }
+    // Função para salvar cliente
+function salvarCliente(event) {
+  event.preventDefault();
+  
+  const btnSalvar = document.getElementById('btn-salvar-cliente');
+  const form = event.target;
+  
+  if (btnSalvar) {
+    // Mostrar estado de carregamento
+    btnSalvar.disabled = true;
+    btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+    
+    // Garantir que o botão permaneça visível
+    btnSalvar.style.display = 'block';
+    btnSalvar.style.visibility = 'visible';
+    btnSalvar.style.opacity = '1';
+  }
 
+  // Enviar o formulário via AJAX
+  fetch('salvar_cliente.php', {
+    method: 'POST',
+    body: new FormData(form)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      mostrarMensagemSucesso(data.message);
+      fecharModal('cliente');
+      // Recarregar ou atualizar a lista de clientes
+    } else {
+      mostrarMensagemErro(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarMensagemErro('Erro ao salvar cliente');
+  })
+  .finally(() => {
+    if (btnSalvar) {
+      btnSalvar.disabled = false;
+      btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar Cliente';
+    }
+  });
+}
+
+// Adicionar event listener ao formulário
+document.getElementById('form-cliente').addEventListener('submit', salvarCliente);
     try {
       const response = await fetch('api/clientes.php', {
         method: 'POST',
