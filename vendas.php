@@ -62,9 +62,10 @@ if ($conn) {
         }
         
         // Buscar vendas
-        $sql = "SELECT v.*, c.nome as cliente_nome, c.telefone as cliente_telefone 
-                FROM vendas v
-                LEFT JOIN clientes c ON v.cliente_id = c.id
+        $sql = "SELECT v.*, c.nome AS cliente_nome, c.telefone AS cliente_telefone, u.nome AS vendedor_nome
+            FROM vendas v
+            LEFT JOIN clientes c ON v.cliente_id = c.id
+            LEFT JOIN usuarios u ON v.usuario_id = u.id
                 $where
                 ORDER BY v.data_venda DESC, v.data_registro DESC";
         
@@ -351,6 +352,9 @@ if ($motivos_conn) {
                         <strong class="<?= $venda['status'] === 'concluida' ? 'text-success' : 'text-muted' ?>">
                             R$ <?= number_format($venda['valor'], 2, ',', '.') ?>
                         </strong>
+                    </td>
+                    <td>
+                        <?= htmlspecialchars($venda['vendedor_nome'] ?? '—') ?>
                     </td>
                     <td>
                         <?php

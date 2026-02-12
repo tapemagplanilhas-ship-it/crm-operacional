@@ -1,10 +1,15 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/header.php';
+
+requerirPermissao('vendedor');
 ?>
 
-<link rel="stylesheet" href="assets/css/clientes.css">
+
+
+
 <div class="page-header">
+    
     <h2><i class="fas fa-user-friends"></i> Clientes</h2>
     <div class="page-actions">
         <button type="button" class="btn-primary" data-action="novo-cliente">
@@ -16,13 +21,11 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<div class="filters">
     <div class="search-box">
         <i class="fas fa-search"></i>
         <input type="text" id="search-cliente" placeholder="Buscar cliente por nome..." 
                onkeyup="buscarClientes()">
     </div>
-</div>
 
 <!-- Tabela de Clientes com ordenação -->
 <div class="table-responsive table-responsive-clientes">
@@ -62,6 +65,36 @@ require_once 'includes/header.php';
 <div id="loading-clientes" class="text-center" style="display: none;">
     <p><i class="fas fa-spinner fa-spin"></i> Carregando...</p>
 </div>
+<style>
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 2px 2px;
+    width: 260px;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    margin-left: 30px;
+    outline: none;
+    font-size: 13px;
+    border: none;
+}
+
+.search-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    padding: 6px;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Configurar busca

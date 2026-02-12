@@ -347,13 +347,13 @@ $conn->close();
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('modal-dashboard-editor')">Cancelar</button>
-            <button class="btn btn-primary" onclick="saveDashboardLayout()">Salvar</button>
+            <button id="btn-salvar-cliente" class="btn btn-primary" type="submit">Salvar</button>
         </div>
     </div>
 </div>
 <?php include 'includes/modals/modal_venda_rapida.php'; ?>
 
-<script src="assets/js/scripts.js?v=1"></script>
+<script src="assets/js/scripts.js"></script>
 <style>
     /* Estilos para a barra de progresso da taxa de fechamento */
     .progress-indicator {

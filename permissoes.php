@@ -1,13 +1,17 @@
 <?php
 require_once "includes/config.php";
 verificarLogin();
-
 if ($_SESSION['perfil'] !== 'admin') {
     exit("Apenas administradores podem acessar este painel.");
 }
 
 require_once "includes/permissoes.php";
 ?>
+<link rel="stylesheet" href="assets/css/perm.css">
+<a href="configuracoes.php" class="btn-voltar-config">
+    <i class="fas fa-arrow-left"></i> Voltar para Configurações
+</a>
+
 <h2>Gerenciar Permissões</h2>
 <form method="POST" action="salvar_permissoes.php">
 

@@ -1,0 +1,121 @@
+/* CONTAINER GERAL — mais espaçoso */
+.relatorios-container {
+    max-width: 1250px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 10px;
+}
+
+/* TÍTULO */
+.relatorios-container h2 {
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #ff0000;
+    font-size: 1.8rem;
+}
+
+/* CARD CLEAN */
+.card {
+    border: none;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    background: #fff;
+}
+
+/* FILTROS */
+.card .card-body label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.card .card-body .form-control {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 0.92rem;
+    background: #fafafa;
+}
+
+.card .card-body .form-control:focus {
+    border-color: #ff0000;
+    box-shadow: none;
+    background: white;
+}
+
+/* BOTÕES */
+.btn-primary {
+    background: #ff0000 !important;
+    border-color: #ff0000 !important;
+    border-radius: 8px !important;
+}
+
+.btn-primary:hover {
+    background: #d30000 !important;
+}
+
+.btn-success {
+    border-radius: 8px !important;
+}
+
+/* TABELA CLEAN */
+.table {
+    border-radius: 10px;
+}
+
+.table thead {
+    background: #fd0000 !important;
+}
+
+.table thead th {
+    color: #fff !important;
+    border: none !important;
+}
+
+.table tbody td {
+    border-color: #f3f4f6 !important;
+    padding: 10px 8px !important;
+}
+
+.table-hover tbody tr:hover {
+    background: #fff5f5;
+}
+
+/* BADGES */
+.badge-success {
+    background: #22c55e !important;
+}
+
+.badge-warning {
+    background: #fbbf24 !important;
+}
+
+/* PAGINAÇÃO CLEAN */
+.pagination .page-link {
+    color: #b91c1c;
+    border: none;
+    background: transparent;
+    padding: 8px 14px;
+}
+
+.pagination .page-item.active .page-link {
+    background: #b91c1c;
+    color: white;
+    border-radius: 6px;
+}
+
+.pagination .page-link:hover {
+    background: #ffe5e5;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 768px) {
+    .relatorios-container {
+        padding: 15px;
+        max-width: 100%;
+    }
+
+    .card .card-body .row > div {
+        margin-bottom: 12px;
+    }
+}

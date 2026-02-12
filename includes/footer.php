@@ -15,7 +15,7 @@
                     <h4 class="footer-title">Suporte</h4>
                     <ul class="footer-links">
                         <li><a href="ajuda.php">Central de Ajuda</a></li>
-                        <li><a href="termos.php">Termos de Uso</a></li>
+                        <li><a href="termos_uso.php">Termos de Uso</a></li>
                         <li><a href="privacidade.php">Política de Privacidade</a></li>
                     </ul>
                 </div>
@@ -23,7 +23,7 @@
                 <div class="footer-section">
                     <h4 class="footer-title">Contato</h4>
                     <div class="footer-contact">
-                        <p class="sup"><i class="fas fa-envelope"></i>suporte@crmoperacional.com.br</p>
+                        <p class="sup"><i class="fas fa-envelope"></i>suporte@tapemag.com.br</p>
                         <p class="tel"><i class="fas fa-phone"></i>(15) 3451-1400</p>
                         <div class="social-links">
                             <a href="https://www.facebook.com/Tapemagtatui/?locale=pt_BR" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>

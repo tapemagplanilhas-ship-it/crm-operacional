@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select year(`c`.`ultima_venda`) AS `ano`,month(`c`.`ultima_venda`) AS `mes`,count(0) AS `clientes_perdidos`,sum(`c`.`total_gasto`) AS `valor_perdido`,avg(`c`.`total_gasto`) AS `valor_medio_perdido`,group_concat(`c`.`nome` separator \', \') AS `lista_clientes` from `crm_operacional`.`clientes` `c` where to_days(curdate()) - to_days(`c`.`ultima_venda`) > 90 and `c`.`ultima_venda` is not null and `c`.`total_gasto` > 0 group by year(`c`.`ultima_venda`),month(`c`.`ultima_venda`) order by year(`c`.`ultima_venda`) desc,month(`c`.`ultima_venda`) desc
+md5=db9b1e79b3a8366b4751f8c577fd0f69
+updatable=0
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=1
+with_check_option=0
+timestamp=0001770728232067276
+create-version=2
+source=SELECT year(`c`.`ultima_venda`) AS `ano`, month(`c`.`ultima_venda`) AS `mes`, count(0) AS `clientes_perdidos`, sum(`c`.`total_gasto`) AS `valor_perdido`, avg(`c`.`total_gasto`) AS `valor_medio_perdido`, group_concat(`c`.`nome` separator \', \') AS `lista_clientes` FROM `clientes` AS `c` WHERE to_days(curdate()) - to_days(`c`.`ultima_venda`) > 90 AND `c`.`ultima_venda` is not null AND `c`.`total_gasto` > 0 GROUP BY year(`c`.`ultima_venda`), month(`c`.`ultima_venda`) ORDER BY year(`c`.`ultima_venda`) DESC, month(`c`.`ultima_venda`) DESC
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_unicode_ci
+view_body_utf8=select year(`c`.`ultima_venda`) AS `ano`,month(`c`.`ultima_venda`) AS `mes`,count(0) AS `clientes_perdidos`,sum(`c`.`total_gasto`) AS `valor_perdido`,avg(`c`.`total_gasto`) AS `valor_medio_perdido`,group_concat(`c`.`nome` separator \', \') AS `lista_clientes` from `crm_operacional`.`clientes` `c` where to_days(curdate()) - to_days(`c`.`ultima_venda`) > 90 and `c`.`ultima_venda` is not null and `c`.`total_gasto` > 0 group by year(`c`.`ultima_venda`),month(`c`.`ultima_venda`) order by year(`c`.`ultima_venda`) desc,month(`c`.`ultima_venda`) desc
+mariadb-version=100432

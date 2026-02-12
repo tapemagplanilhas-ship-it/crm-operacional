@@ -2,7 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/header.php';
 verificarLogin();
-requerirPermissao('gerencia');
+requerirPermissao('vendedor');
 
 $usuarioId = $_SESSION['usuario_id'] ?? null;
 $perfil = $_SESSION['perfil'] ?? null;

@@ -23,33 +23,51 @@ $filtroVendedor = $_GET['vendedor_id'] ?? '';
 $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $porPagina = 15;
 
-// Função para exportar CSV
 function exportarParaCSV($dados, $colunas) {
-    // Configurar headers para download
-    header('Content-Type: text/csv; charset=utf-8');
+
+    // Forçar download no Excel sem bagunçar acentuação
+    header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="relatorio_vendas_' . date('Y-m-d_His') . '.csv"');
-    
-    // Criar arquivo de saída
+
+    // Abre saída
     $output = fopen('php://output', 'w');
-    
-    // Adicionar BOM para UTF-8 (importante para Excel)
+
+    // Adiciona BOM para acentuação funcionar no Excel
     fwrite($output, "\xEF\xBB\xBF");
-    
+
+    // Deixa cabeçalhos mais bonitos (Primeira letra maiúscula)
+    $cabecalhos_formatados = array_map(function($c) {
+        return mb_convert_case($c, MB_CASE_TITLE, "UTF-8");
+    }, $colunas);
+
     // Escrever cabeçalhos
-    fputcsv($output, $colunas, ';');
-    
-    // Escrever dados formatados
+    fputcsv($output, $cabecalhos_formatados, ';');
+
+    // Escrever linhas formatadas
     foreach ($dados as $linha) {
+
+        $data = date('d/m/Y', strtotime($linha['data_venda']));
+        $cliente = trim($linha['cliente']);
+        $vendedor = trim($linha['vendedor']);
+
+        // Formatar valor sempre como número brasileiro
+        $valor = number_format($linha['valor'], 2, ',', '.');
+
+        // Status elegante
+        $status = ucfirst(strtolower($linha['status']));
+
+        // Linha final
         $row = [
-            date('d/m/Y', strtotime($linha['data_venda'])), // Data formatada
-            $linha['cliente'],
-            $linha['vendedor'],
-            number_format($linha['valor'], 2, ',', '.'),    // Valor formatado
-            $linha['status']
+            $data,
+            $cliente,
+            $vendedor,
+            'R$ '.$valor,
+            $status
         ];
+
         fputcsv($output, $row, ';');
     }
-    
+
     fclose($output);
     exit;
 }
@@ -126,6 +144,8 @@ $vendedores = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 require_once 'includes/header.php';
 ?>
 
+<div class="relatorios-container">
+<link rel="stylesheet" href="assets/css/relatorios.css">
 <!-- Interface do usuário -->
 <div class="container-fluid">
     <div class="row">
@@ -263,6 +283,7 @@ require_once 'includes/header.php';
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <?php

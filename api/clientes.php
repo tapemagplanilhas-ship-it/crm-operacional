@@ -6,11 +6,13 @@ require_once '../includes/config.php';
 
 $response = ['success' => false, 'message' => ''];
 
-$usuarioId = null;
+
 if (function_exists('iniciarSessao')) {
     iniciarSessao();
     $usuarioId = $_SESSION['usuario_id'] ?? null;
 }
+$usuarioId = $_SESSION['usuario_id'] ?? null;
+$perfil = $_SESSION['perfil'] ?? 'vendedor';
 
 $conn = getConnection();
 if (!$conn) {
@@ -29,33 +31,32 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        $response['data'] = [];
+    $response['data'] = [];
+    
+    if (isset($_GET['id'])) {
+        $id = cleanData($_GET['id']);
+        $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
-        if (isset($_GET['id'])) {
-            $id = cleanData($_GET['id']);
-            $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ? AND usuario_id = ?");
-            $stmt->bind_param("ii", $id, $usuarioId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($row = $result->fetch_assoc()) {
-                $response['data'] = $row;
-                $response['success'] = true;
-            } else {
-                $response['message'] = 'Cliente não encontrado';
-            }
-        } else {
-            $stmt = $conn->prepare("SELECT * FROM clientes WHERE usuario_id = ? ORDER BY nome");
-            $stmt->bind_param("i", $usuarioId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            while ($row = $result->fetch_assoc()) {
-                $response['data'][] = $row;
-            }
+        if ($row = $result->fetch_assoc()) {
+            $response['data'] = $row;
             $response['success'] = true;
+        } else {
+            $response['message'] = 'Cliente não encontrado';
         }
-        break;
+    } else {
+        $stmt = $conn->prepare("SELECT * FROM clientes ORDER BY nome");
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            $response['data'][] = $row;
+        }
+        $response['success'] = true;
+    }
+    break;
         
     case 'POST':
         $data = json_decode(file_get_contents('php://input'), true);

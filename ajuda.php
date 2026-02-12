@@ -133,14 +133,21 @@ require_once 'includes/header.php';
                         </div>
                     </div>
                 </div>
+                <div class="card-mapa">
+    <h3><i class="fas fa-map-marked-alt"></i> Localização</h3>
+
+    <div class="map-container">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1295.0601930824237!2d-47.85664648765965!3d-23.352616740540693!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94c5d92430a3ffff%3A0xa390c08c435262b6!2sTapemag%20-%20Uma%20loja%20completa%20de%20solu%C3%A7%C3%B5es.!5e0!3m2!1spt-BR!2sbr!4v1770904856691!5m2!1spt-BR!2sbr" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+</div>
 
                 <div class="help-section">
                     <h4>📞 Suporte</h4>
                     <p>Para mais informações ou problemas técnicos, entre em contato com:</p>
                     <ul>
                         <li><strong>E-mail:</strong> suporte@tapemag.com.br</li>
-                        <li><strong>Telefone:</strong> (11) 1234-5678</li>
-                        <li><strong>Horário:</strong> Segunda a Sexta, das 8h às 18h</li>
+                        <li><strong>Telefone:</strong> (15) 3451-1400</li>
+                        <li><strong>Horário:</strong> Segunda a Sexta, das 7:30h às 18h</li>
                     </ul>
                 </div>
             </div>

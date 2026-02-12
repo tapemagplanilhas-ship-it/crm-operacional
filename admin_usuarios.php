@@ -352,37 +352,40 @@ function displayMainPage() {
 }
 ?>
 <style>
-/* ========== ESTILOS GERAIS ========== */
+/* ============================
+   ESTILO GERAL CLEAN
+============================ */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f7fa;
-    color: #333;
+    font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+    background: #f8f9fb;
     margin: 0;
-    padding: 0;
+    color: #333;
 }
 
 .main-container {
     display: flex;
-    min-height: 100vh;
+    padding: 20px;
 }
 
 .content {
     flex: 1;
-    padding: 20px;
-    background-color: #f5f7fa;
+    padding: 10px 20px;
 }
 
-/* ========== CARDS ========== */
+/* ============================
+   CARDS MODERNOS
+============================ */
 .card {
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 0;
+    margin-bottom: 25px;
 }
 
 .card-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    padding: 20px;
+    border-bottom: 1px solid #ededed;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -390,282 +393,214 @@ body {
 
 .card-header h3 {
     margin: 0;
-    font-size: 1.25rem;
-    color: #333;
+    font-size: 1.3rem;
+    color: #222;
+    font-weight: 600;
 }
 
 .card-body {
     padding: 20px;
 }
 
-/* ========== CABEÇALHO E AÇÕES ========== */
-.header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.header-actions {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-/* ========== FORMULÁRIOS ========== */
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #555;
-}
-
-.form-control {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    transition: all 0.3s;
-}
-
-.form-control:focus {
-    border-color: #d10101;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(209, 1, 1, 0.1);
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-/* ========== TABELAS ========== */
-.table-responsive {
-    overflow-x: auto;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.table th {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    text-align: left;
-    font-weight: 600;
-    color: #555;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    vertical-align: middle;
-}
-
-.table tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-/* ========== BOTÕES ========== */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    border: none;
-    gap: 5px;
-    font-size: 14px;
-}
-
-.btn-primary {
-    background-color: #d10101;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #b00000;
-}
-
-.btn-secondary {
-    background-color: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-}
-
-.btn-success {
-    background-color: #28a745;
-    color: white;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 12px;
-}
-
-/* ========== BADGES ========== */
-.badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.badge-admin {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.badge-gerencia {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.badge-vendedor {
-    background-color: #cfe2ff;
-    color: #084298;
-}
-.badge-estoque {
-    background-color: #e2e3e5;
-    color: #383d41;
-}
-
-.badge-rh {
-    background-color: #d6d8db;
-    color: #1b1e21;
-}
-
-.badge-financeiro {
-    background-color: #cce5ff;
-    color: #004085;
-}
-
-.badge-caixa {
-    background-color: #d6dfe2;
-    color: #4d8385;
-}
-
-.badge-recebimento {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status-ativo {
-    background-color: #d1e7dd;
-    color: #0f5132;
-}
-
-.status-inativo {
-    background-color: #f8d7da;
-    color: #842029;
-}
-
-/* ========== ALERTAS ========== */
-.alert {
-    padding: 12px 15px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    font-size: 14px;
-}
-
-.alert-success {
-    background-color: #d1e7dd;
-    color: #0f5132;
-    border: 1px solid #badbcc;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c2c7;
-}
-
-/* ========== BARRA DE PESQUISA ========== */
+/* ============================
+   BARRA DE PESQUISA
+============================ */
 .search-box {
     display: flex;
     align-items: center;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    margin-top: 20px;
-    padding: 8px 15px;
-    border: 1px solid #ddd;
-    width: 300px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 2px 2px;
+    width: 260px;
 }
 
 .search-box input {
     flex: 1;
     border: none;
     background: transparent;
-    padding: 5px;
+    margin-left: 30px;
     outline: none;
-    font-size: 11px;
-    margin-left: 13px;
+    font-size: 13px;
 }
 
 .search-btn {
     background: none;
-    padding: 10px;
     border: none;
     cursor: pointer;
-    color: #666;
+    color: #fdf9f9;
+    padding: 6px;
 }
 
-/* ========== AÇÕES DA TABELA ========== */
+/* ============================
+   TABELAS MINIMALISTAS
+============================ */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table thead th {
+    background: #f1f5f9;
+    padding: 14px;
+    font-weight: 600;
+    color: #444;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table tbody tr:hover {
+    background: #fafafa;
+}
+
+/* ============================
+   BOTÕES MODERNOS
+============================ */
+.btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+}
+
+.btn-primary {
+    background: #d10101;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #b30000;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+/* ============================
+   BADGES
+============================ */
+.badge {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-admin {
+    background: #fce7e7;
+    color: #7f1d1d;
+}
+
+.badge-vendedor {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.badge-gerencia {
+    background: #fff7d6;
+    color: #8a6d00;
+}
+
+.status-ativo {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-inativo {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ============================
+   FORMULÁRIOS CLEAN
+============================ */
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #555;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d4d4d8;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: 0.2s;
+}
+
+.form-control:focus {
+    background: #fff;
+    border-color: #d10101;
+    box-shadow: 0 0 0 2px rgba(209,1,1,0.15);
+}
+
+/* ============================
+   ALERTAS CLEAN
+============================ */
+.alert {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.alert-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #bbf7d0;
+}
+
+.alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* ============================
+   AÇÕES DA TABELA
+============================ */
 .actions {
     display: flex;
-    gap: 5px;
+    gap: 6px;
 }
 
-/* ========== RESPONSIVIDADE ========== */
+/* ============================
+   RESPONSIVIDADE
+============================ */
 @media (max-width: 768px) {
     .header-row {
         flex-direction: column;
         align-items: flex-start;
+        gap: 10px;
     }
-    
-    .header-actions {
-        width: 100%;
-        margin-top: 10px;
-    }
-    
+
     .search-box {
         width: 100%;
-    }
-    
-    .table th, .table td {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-    
-    .btn-sm {
-        padding: 3px 6px;
     }
 }
 </style>

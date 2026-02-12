@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `u`.`id` AS `usuario_id`,`u`.`nome` AS `vendedor`,coalesce(`m`.`meta_valor`,0) AS `meta_mensal`,coalesce(sum(`v`.`valor`),0) AS `faturamento_atual`,coalesce(sum(`v`.`valor`),0) / nullif(`m`.`meta_valor`,0) * 100 AS `percentual_atingido`,dayofmonth(last_day(curdate())) - dayofmonth(curdate()) AS `dias_restantes_mes`,coalesce(avg(`v`.`valor`),0) AS `media_diaria_atual`,(`m`.`meta_valor` - coalesce(sum(`v`.`valor`),0)) / nullif(dayofmonth(last_day(curdate())) - dayofmonth(curdate()),0) AS `necessidade_diaria_restante` from ((`crm_operacional`.`usuarios` `u` left join `crm_operacional`.`vendas` `v` on(`v`.`usuario_id` = `u`.`id` and month(`v`.`data_venda`) = month(curdate()) and year(`v`.`data_venda`) = year(curdate()) and `v`.`status` = \'concluida\')) left join `crm_operacional`.`metas_vendedor_mensal` `m` on(`m`.`vendedor_id` = `u`.`id` and `m`.`mes` = month(curdate()) and `m`.`ano` = year(curdate()))) group by `u`.`id`
+md5=db844870904c97eb16ab8d6ccbe859bd
+updatable=0
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001770806667188819
+create-version=2
+source=SELECT\n    u.id AS usuario_id,\n    u.nome AS vendedor,\n\n    -- META MENSAL\n    COALESCE(m.meta_valor, 0) AS meta_mensal,\n\n    -- FATURAMENTO DO MÊS\n    COALESCE(SUM(v.valor), 0) AS faturamento_atual,\n\n    -- % DA META ATINGIDA\n    (COALESCE(SUM(v.valor), 0) / NULLIF(m.meta_valor, 0)) * 100 AS percentual_atingido,\n\n    -- DIAS QUE FALTAM NO MÊS\n    (DAY(LAST_DAY(CURDATE())) - DAY(CURDATE())) AS dias_restantes_mes,\n\n    -- MÉDIA DIÁRIA ATUAL\n    COALESCE(AVG(v.valor), 0) AS media_diaria_atual,\n\n    -- NECESSÁRIO POR DIA PARA BATER META\n    (m.meta_valor - COALESCE(SUM(v.valor), 0)) \n        / NULLIF((DAY(LAST_DAY(CURDATE())) - DAY(CURDATE())), 0)\n        AS necessidade_diaria_restante\n\nFROM usuarios u\n\n-- VENDAS SOMENTE DO MÊS ATUAL\nLEFT JOIN vendas v \n    ON v.usuario_id = u.id\n   AND MONTH(v.data_venda) = MONTH(CURDATE())\n   AND YEAR(v.data_venda) = YEAR(CURDATE())\n   AND v.status = \'concluida\'\n\n-- META DO MÊS\nLEFT JOIN metas_vendedor_mensal m\n    ON m.vendedor_id = u.id\n   AND m.mes = MONTH(CURDATE())\n   AND m.ano = YEAR(CURDATE())\n\nGROUP BY u.id
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_unicode_ci
+view_body_utf8=select `u`.`id` AS `usuario_id`,`u`.`nome` AS `vendedor`,coalesce(`m`.`meta_valor`,0) AS `meta_mensal`,coalesce(sum(`v`.`valor`),0) AS `faturamento_atual`,coalesce(sum(`v`.`valor`),0) / nullif(`m`.`meta_valor`,0) * 100 AS `percentual_atingido`,dayofmonth(last_day(curdate())) - dayofmonth(curdate()) AS `dias_restantes_mes`,coalesce(avg(`v`.`valor`),0) AS `media_diaria_atual`,(`m`.`meta_valor` - coalesce(sum(`v`.`valor`),0)) / nullif(dayofmonth(last_day(curdate())) - dayofmonth(curdate()),0) AS `necessidade_diaria_restante` from ((`crm_operacional`.`usuarios` `u` left join `crm_operacional`.`vendas` `v` on(`v`.`usuario_id` = `u`.`id` and month(`v`.`data_venda`) = month(curdate()) and year(`v`.`data_venda`) = year(curdate()) and `v`.`status` = \'concluida\')) left join `crm_operacional`.`metas_vendedor_mensal` `m` on(`m`.`vendedor_id` = `u`.`id` and `m`.`mes` = month(curdate()) and `m`.`ano` = year(curdate()))) group by `u`.`id`
+mariadb-version=100432

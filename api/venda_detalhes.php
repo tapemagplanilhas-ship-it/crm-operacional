@@ -26,14 +26,14 @@ if (isset($_GET['id'])) {
     $venda_id = cleanData($_GET['id']);
     
     // Buscar venda com informações do cliente
-    $sql = "SELECT v.*, c.nome as cliente_nome, c.telefone as cliente_telefone,
-                   u.nome as vendedor_nome,
-                   m.nome as motivo_perda_nome, m.permite_outro as motivo_perda_permite_outro
-            FROM vendas v
-            LEFT JOIN clientes c ON v.cliente_id = c.id
-            LEFT JOIN usuarios u ON v.usuario_id = u.id
-            LEFT JOIN motivos_perda m ON v.motivo_perda_id = m.id
-            WHERE v.id = ?";
+    $sql = "SELECT 
+            v.*,
+            c.nome AS cliente_nome,
+            u.nome AS vendedor_nome
+        FROM vendas v
+        LEFT JOIN clientes c ON v.cliente_id = c.id
+        LEFT JOIN usuarios u ON v.usuario_id = u.id
+        WHERE v.id = ?";
     if ($perfil_usuario === 'vendedor') {
         $sql .= " AND v.usuario_id = ?";
     }

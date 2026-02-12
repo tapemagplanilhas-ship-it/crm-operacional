@@ -24,7 +24,7 @@ $usuario_logado = getUsuarioLogado();
     <link rel="icon" type="image/png" href="assets/images/logo-tapemag2.png" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="assets/css/styles.css">                                                                         
    <link rel="stylesheet" href="assets/css/sidebar.css?v=<?= filemtime('assets/css/sidebar.css') ?>">
-   <script src="assets/js/scripts.js?v=1"></script>
+   <script src="assets/js/scripts.js?v=<?= time() ?>"></script>
 
 
 

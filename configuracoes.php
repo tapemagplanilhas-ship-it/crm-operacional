@@ -58,6 +58,7 @@ while ($row = mysqli_fetch_assoc($sessoes_result)) {
 }
 ?>
 
+<link rel="stylesheet" href="assets/css/configuracoes.css">
 <main class="settings-page">
     <div class="page-header">
         <h1><i class="fas fa-cog"></i> Configurações da Conta</h1>
@@ -76,8 +77,23 @@ while ($row = mysqli_fetch_assoc($sessoes_result)) {
             <div class="section-content">
                 <div class="foto-perfil-container">
                     <div class="foto-preview">
-                        <img id="fotoPreview" class="foto-circular" src="<?php echo $usuario['foto_perfil'] ? htmlspecialchars($usuario['foto_perfil']) : 'img/default-avatar.png'; ?>" alt="Foto de perfil">
-                    </div>
+
+    <?php if (!empty($usuario['foto_perfil'])): ?>
+
+        <img id="fotoPreview" class="foto-circular" 
+             src="<?php echo htmlspecialchars($usuario['foto_perfil']); ?>" 
+             alt="Foto de perfil">
+
+    <?php else: ?>
+
+        <div id="fotoPreviewLetra" class="avatar-iniciais-perfil">
+            <?php echo strtoupper(substr($usuario['nome'], 0, 1)); ?>
+        </div>
+
+    <?php endif; ?>
+
+</div>
+                    
                     <button type="button" class="btn btn-secondary" onclick="abrirModalFoto()">
                         <i class="fas fa-camera"></i> Alterar Foto
                     </button>
@@ -95,6 +111,11 @@ while ($row = mysqli_fetch_assoc($sessoes_result)) {
                         <label for="email">E-mail</label>
                         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($usuario['email']); ?>" class="form-control" required>
                     </div>
+                    <?php if ($_SESSION['perfil'] === 'admin'): ?>
+                        <a href="permissoes.php" class="btn-permissoes">
+                            <i class="fas fa-shield-alt"></i> Gerenciar Permissões
+                        </a>
+                    <?php endif; ?>
                     
                     <div class="form-group">
                         <label>Perfil</label>
@@ -142,33 +163,6 @@ while ($row = mysqli_fetch_assoc($sessoes_result)) {
                     </button>
                 </div>
                 
-                <div class="logs-container">
-                    <h3 class="section-subtitle">Histórico de Acessos</h3>
-                    <div class="logs-list">
-                        <?php if (empty($logs_login)): ?>
-                            <p class="empty-message">Nenhum registro de acesso encontrado.</p>
-                        <?php else: ?>
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Data/Hora</th>
-                                        <th>Endereço IP</th>
-                                        <th>Dispositivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($logs_login as $log): ?>
-                                    <tr>
-                                        <td><?php echo date('d/m/Y H:i', strtotime($log['criado_em'])); ?></td>
-                                        <td><code><?php echo htmlspecialchars($log['ip_address']); ?></code></td>
-                                        <td><?php echo htmlspecialchars(substr($log['user_agent'], 0, 50)); ?>...</td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
-                    </div>
-                </div>
             </div>
         </div>
         
