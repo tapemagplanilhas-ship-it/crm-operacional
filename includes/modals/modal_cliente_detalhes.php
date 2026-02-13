@@ -79,12 +79,6 @@
             <button type="button" class="btn-secondary" id="btn-ver-vendas-cliente" onclick="toggleVendasCliente()">
                 <i class="fas fa-receipt"></i> Ver Vendas
             </button>
-            <button type="button" class="btn-secondary" id="btn-editar-cliente-detalhes" onclick="editarClienteDetalhes()">
-                <i class="fas fa-edit"></i> Editar
-            </button>
-            <button type="button" class="btn-primary" id="btn-nova-venda-detalhes" onclick="novaVendaClienteDetalhes()">
-                <i class="fas fa-shopping-cart"></i> Nova Venda
-            </button>
         </div>
     </div>
 </div>

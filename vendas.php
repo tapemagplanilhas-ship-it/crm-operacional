@@ -277,7 +277,7 @@ if ($motivos_conn) {
 <div class="table-responsive table-responsive-clientes">
     <table class="data-table sortable" id="tabela-vendas">
         <thead>
-            <tr>
+            <tr data-venda-id="<?= $venda['id'] ?>">
                 <th class="sortable-header" data-sort="data_venda" data-order="desc">
                     Data <i class="fas fa-sort"></i>
                 </th>
@@ -333,12 +333,12 @@ if ($motivos_conn) {
             });
             
             if (empty($vendas)): ?>
-                <tr>
+                <tr data-venda-id="<?= $venda['id'] ?>">
                     <td colspan="7" class="text-center">Nenhuma venda encontrada</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($vendas as $venda): ?>
-                <tr>
+                <tr data-venda-id="<?= $venda['id'] ?>">
                     <td>
                         <strong><?= date('d/m/Y', strtotime($venda['data_venda'])) ?></strong>
                     </td>
@@ -1114,32 +1114,76 @@ async function salvarEdicaoVenda(event) {
 
 // Excluir venda
 async function excluirVenda(vendaId, clienteNome) {
-    if (typeof window.confirmarExclusao !== 'function') return;
-    const confirmado = await window.confirmarExclusao(`Tem certeza que deseja excluir esta negociacao do cliente "${clienteNome}"?`);
+    if (!vendaId || isNaN(vendaId)) {
+        mostrarToast('ID de venda inválido', 'error');
+        return;
+    }
+
+    const confirmado = await window.confirmarExclusao(
+        `Tem certeza que deseja excluir esta negociação do cliente "${clienteNome}"?`
+    );
+    
     if (!confirmado) return;
 
     try {
-        const response = await fetch(`api/vendas_excluir.php?id=${vendaId}`, {
-            method: 'DELETE'
+        const formData = new FormData();
+        formData.append('id', vendaId);
+        formData.append('_token', '<?php echo $_SESSION['token'] ?? ''; ?>');
+
+        const response = await fetch('api/vendas_excluir.php', {
+            method: 'POST',
+            body: formData
         });
         
         const result = await response.json();
         
         if (result.success) {
             mostrarToast(result.message, 'success');
-            // Recarregar a pgina
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
+            
+            // REMOÇÃO DA LINHA - MÉTODO CORRIGIDO
+            const tabela = document.getElementById('tabela-vendas');
+            const linha = tabela.querySelector(`tr[data-venda-id="${vendaId}"]`);
+            
+            if (linha) {
+                // Adiciona animação de fade out
+                linha.style.transition = 'opacity 0.3s';
+                linha.style.opacity = '0';
+                
+                // Remove após a animação
+                setTimeout(() => {
+                    linha.remove();
+                    
+                    // Atualiza contadores
+                    atualizarContadoresTabela();
+                    
+                    // Mostra mensagem se tabela ficar vazia
+                    if (tabela.querySelectorAll('tbody tr').length === 0) {
+                        tabela.querySelector('tbody').innerHTML = `
+                            <tr>
+                                <td colspan="8" class="text-center">Nenhuma venda encontrada</td>
+                            </tr>
+                        `;
+                    }
+                }, 300);
+            }
         } else {
-            mostrarToast(result.message, 'error');
+            mostrarToast(result.message || 'Erro ao excluir venda', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
-        mostrarToast('Erro de conexo', 'error');
+        mostrarToast('Erro de conexão', 'error');
     }
 }
-
+function atualizarContadoresTabela() {
+    const tabela = document.getElementById('tabela-vendas');
+    if (!tabela) return;
+    
+    // Atualiza o número total de vendas
+    const totalVendas = tabela.querySelectorAll('tbody tr:not(.text-center)').length;
+    document.querySelector('.stat-value[data-stat="total"]').textContent = totalVendas;
+    
+    // Você pode adicionar mais atualizações de estatísticas aqui conforme necessário
+}
 // Toggle do menu de ações
 function toggleActionsMenu(button) {
     const dropdown = button.nextElementSibling;

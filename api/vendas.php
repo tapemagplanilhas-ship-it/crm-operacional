@@ -247,6 +247,7 @@ try {
     }
 }
 
+
 // Helpers (mantive iguais aos seus)
 function formatarStatus($status) {
     $statuses = [
