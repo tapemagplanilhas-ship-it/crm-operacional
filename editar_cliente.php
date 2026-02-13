@@ -1,4 +1,4 @@
-
+<?php
 session_start();
 $cliente_id = $_GET['id'] ?? 0;
 
@@ -14,3 +14,4 @@ if ($perfil_usuario === 'vendedor') {
         }
     }
 }
+?>
