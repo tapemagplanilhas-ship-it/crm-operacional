@@ -24,11 +24,11 @@
                     <h4 class="footer-title">Contato</h4>
                     <div class="footer-contact">
                         <p class="sup"><i class="fas fa-envelope"></i>suporte@tapemag.com.br</p>
-                        <p class="tel"><i class="fas fa-phone"></i>(15) 3451-1400</p>
+                        <p class="tel"><i class="fas fa-phone"></i>(15) 3451-1419</p>
                         <div class="social-links">
                             <a href="https://www.facebook.com/Tapemagtatui/?locale=pt_BR" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
                             <a href="https://www.instagram.com/tapemagtatui/?__d=dist" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
-                            <a href="https://api.whatsapp.com/send/?phone=1534511400&text=Ol%C3%A1%21+Gostaria+de+fazer+uma+compra+pelo+WhatsApp&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i></a>
+                            <a href="https://api.whatsapp.com/send/?phone=1534511400&text=Ol%C3%A1%21+Preciso+de+ajuda+com+o+CRM%21&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i></a>
                         </div>
                     </div>
                 </div>

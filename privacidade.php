@@ -130,7 +130,7 @@
 
     <h2>9. Contato</h2>
     <p>Se tiver dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados, entre em contato:</p>
-    <p><strong>suporte@seudominio.com.br</strong></p>
+    <p><strong>suporte@tapemag.com.br</strong></p>
 
     <div class="footer">
         Última atualização: <strong>2026</strong>

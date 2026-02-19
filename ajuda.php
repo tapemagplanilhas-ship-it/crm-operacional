@@ -146,7 +146,7 @@ require_once 'includes/header.php';
                     <p>Para mais informações ou problemas técnicos, entre em contato com:</p>
                     <ul>
                         <li><strong>E-mail:</strong> suporte@tapemag.com.br</li>
-                        <li><strong>Telefone:</strong> (15) 3451-1400</li>
+                        <li><strong>Telefone:</strong> (15) 3451-1419</li>
                         <li><strong>Horário:</strong> Segunda a Sexta, das 7:30h às 18h</li>
                     </ul>
                 </div>

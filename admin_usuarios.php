@@ -4,16 +4,10 @@ ob_start();
 require_once 'includes/config.php';
 
 // Verificar se é admin
-if ($_SESSION['perfil'] !== 'admin') {
+$perfisPermitidos = ['admin', 'gerencia'];
+if (!in_array($_SESSION['perfil'], $perfisPermitidos)) {
     $_SESSION['mensagem_erro'] = 'Acesso negado!';
     header('Location: index.php');
-    exit;
-}
-
-if ($_SESSION['perfil'] !== 'admin') {
-    $_SESSION['mensagem_erro'] = 'Acesso negado!';
-    header('Location: index.php');
-    ob_end_flush();
     exit;
 }
 

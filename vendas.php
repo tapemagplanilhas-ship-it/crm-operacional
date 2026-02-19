@@ -1604,7 +1604,3 @@ function escapeHtml(text) {
 <?php 
 require_once 'includes/footer.php';
 ?>
-
-
-
-
