@@ -347,7 +347,7 @@ $conn->close();
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('modal-dashboard-editor')">Cancelar</button>
-            <button id="btn-salvar-cliente" class="btn btn-primary" type="submit">Salvar</button>
+            <button class="btn btn-primary" onclick="saveDashboardLayout()">Salvar</button>
         </div>
     </div>
 </div>

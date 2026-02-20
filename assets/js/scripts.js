@@ -1272,7 +1272,7 @@ window.abrirModalCliente = abrirModalCliente;
 
       mostrarToast('Layout salvo com sucesso', 'success');
       window.closeModal('modal-dashboard-editor');
-
+      window.location.reload();
       currentDashboardLayout = layout;
       renderDashboardFromLayout(currentDashboardLayout);
     } catch (err) {
