@@ -20,6 +20,9 @@ $todas_areas_relatorios = [
     'financeiro' => [
         'fluxo_caixa' => 'Fluxo de Caixa',
         'receitas_despesas' => 'Receitas vs Despesas'
+    ],
+    'estoque' => [
+        'itens_sep' => 'Itens Área de Separação'
     ]
 ];
 
