@@ -313,7 +313,7 @@ if ($motivos_conn) {
                 $val_a = $a[$sort_by] ?? '';
                 $val_b = $b[$sort_by] ?? '';
                 
-                // Tratamento especial para valores numricos
+                // Tratamento especial para valores numericos
                 if ($sort_by === 'valor') {
                     $val_a = floatval($val_a);
                     $val_b = floatval($val_b);
