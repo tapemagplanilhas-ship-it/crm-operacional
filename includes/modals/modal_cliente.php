@@ -12,22 +12,21 @@
                 <label for="cliente-nome" class="required">Nome completo</label>
                 <input type="text" id="cliente-nome" name="nome" required 
                        placeholder="Digite o nome do cliente"
-                       oninput="verificarAlteracoesCliente()">
+>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="cliente-empresa">Nome da empresa</label>
                     <input type="text" id="cliente-empresa" name="empresa"
-                           placeholder="Nome da empresa"
-                           oninput="verificarAlteracoesCliente()">
+                           placeholder="Nome da empresa">
                 </div>
 
                 <div class="form-group">
                     <label for="cliente-documento">CNPJ/CPF</label>
                     <input type="text" id="cliente-documento" name="documento"
                            placeholder="00.000.000/0000-00 ou 000.000.000-00"
-                           oninput="formatarDocumento(this); verificarAlteracoesCliente()"
+                           oninput="formatarDocumento(this);"
                            maxlength="18">
                 </div>
             </div>
@@ -44,8 +43,7 @@
                 <div class="form-group">
                     <label for="cliente-email">E-mail</label>
                     <input type="email" id="cliente-email" name="email" 
-                           placeholder="cliente@email.com"
-                           oninput="verificarAlteracoesCliente()">
+                           placeholder="cliente@email.com">
                 </div>
             </div>
             
@@ -53,8 +51,7 @@
                 <label for="cliente-observacoes">Observações</label>
                 <textarea id="cliente-observacoes" name="observacoes" 
                           placeholder="Anotações sobre o cliente..." 
-                          rows="3"
-                          oninput="verificarAlteracoesCliente()"></textarea>
+                          rows="3"></textarea>
             </div>
             
             <!-- Campos automáticos (somente leitura) -->
