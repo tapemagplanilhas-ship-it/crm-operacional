@@ -1407,62 +1407,98 @@ document.getElementById('form-cliente').addEventListener('submit', salvarCliente
 
   async function registrarVenda(event) {
     event.preventDefault();
-
-    const form = document.getElementById('form-venda');
-    if (!form) return;
-
-    const data = Object.fromEntries(new FormData(form).entries());
-
-    if (!data.cliente_id) return mostrarToast('Cliente é obrigatório', 'error');
-    if (!data.valor || data.valor === 'R$ 0,00') return mostrarToast('Valor é obrigatório', 'error');
-
-    if (data.data_venda && !validarData(data.data_venda)) {
-      return mostrarToast('Data inválida. Use dd/mm/aaaa', 'error');
-    }
-
-    const motivoPayload = obterMotivoPerdaPayload('venda-motivo-perda-select', 'venda-motivo-perda-outro');
-    if (data.status === 'perdida' && !motivoPayload.motivoId) {
-      return mostrarToast('Motivo da perda é obrigatório', 'error');
-    }
-    if (data.status === 'perdida' && !motivoPayload.motivoOutro && document.getElementById('venda-motivo-perda-select')?.selectedOptions?.[0]?.dataset?.permiteOutro === '1') {
-      return mostrarToast('Descreva o motivo da perda', 'error');
-    }
-    data.motivo_perda_id = motivoPayload.motivoId || '';
-    data.motivo_perda_outro = motivoPayload.motivoOutro || '';
-
+    
+    const form = event.target;
     const btnSubmit = form.querySelector('button[type="submit"]');
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
-    }
-
+    const originalBtnText = btnSubmit.innerHTML;
+    
     try {
-      const response = await fetch('api/vendas.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        mostrarToast(result.message || 'Venda registrada!', 'success');
+        // Desabilita o botão durante o processamento
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+        
+        // Validação adicional
+        if (!validarFormularioVenda(form)) {
+            throw new Error('Por favor, preencha todos os campos obrigatórios');
+        }
+        
+        // Formata os dados para envio
+        const formData = new FormData(form);
+        const dados = Object.fromEntries(formData.entries());
+        
+        // Formatação de valores
+        dados.valor = parseFloat(dados.valor.replace(/[^\d,]/g, '').replace(',', '.'));
+        dados.data_venda = formatarDataParaBanco(dados.data_venda);
+        
+        // Envia para a API
+        const response = await fetch('/api/vendas.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dados)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Erro ao registrar venda');
+        }
+        
+        const resultado = await response.json();
+        
+        // Fecha o modal e recarrega os dados
         fecharModal('venda');
-        setTimeout(() => window.location.reload(), 800);
-      } else {
-        mostrarToast(result.message || 'Erro ao registrar venda', 'error');
-      }
+        
+        // Atualiza a página de clientes ou mostra mensagem de sucesso
+        if (window.location.pathname.includes('clientes.php')) {
+            carregarVendasCliente(dados.cliente_id);
+            mostrarNotificacao('Venda registrada com sucesso!', 'success');
+        } else {
+            alert('Venda registrada com sucesso!');
+        }
+        
     } catch (error) {
-      console.error('Erro:', error);
-      mostrarToast('Erro de conexão', 'error');
+        console.error('Erro ao registrar venda:', error);
+        mostrarNotificacao(error.message, 'error');
     } finally {
-      if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<i class="fas fa-check"></i> Registrar Venda';
-      }
+        btnSubmit.innerHTML = originalBtnText;
     }
-  }
+}
+
+// Funções auxiliares
+function validarFormularioVenda(form) {
+    // Verifica campos obrigatórios
+    const requiredFields = form.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.style.borderColor = 'red';
+            isValid = false;
+        } else {
+            field.style.borderColor = '';
+        }
+    });
+    
+    // Validação específica para vendas perdidas
+    const status = form.querySelector('#venda-status').value;
+    if (status === 'perdida') {
+        const motivoPerda = form.querySelector('#venda-motivo-perda-select').value;
+        if (!motivoPerda) {
+            mostrarNotificacao('Selecione um motivo para venda perdida', 'error');
+            isValid = false;
+        }
+    }
+    
+    return isValid;
+}
+
+function formatarDataParaBanco(data) {
+    // Converte de dd/mm/yyyy para yyyy-mm-dd
+    const parts = data.split('/');
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
 
   async function buscarClientesSugestoes(termo) {
     const container = document.getElementById('clientes-sugestoes');

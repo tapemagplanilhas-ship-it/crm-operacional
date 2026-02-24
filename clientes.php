@@ -174,7 +174,43 @@ document.addEventListener('DOMContentLoaded', function() {
             </tr>
         `).join('');
     }
-    
+    function carregarVendasCliente(clienteId) {
+    fetch(`/api/vendas.php?cliente_id=${clienteId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                // Atualiza a lista de vendas na página
+                const tbody = document.querySelector('#vendas-cliente tbody');
+                tbody.innerHTML = '';
+                
+                data.data.forEach(venda => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formatarDataExibicao(venda.data_venda)}</td>
+                        <td>${venda.status}</td>
+                        <td>R$ ${venda.valor.toFixed(2).replace('.', ',')}</td>
+                        <td>${venda.forma_pagamento}</td>
+                        <td>${venda.observacoes || '-'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Atualiza os totais do cliente
+                if (data.totais) {
+                    document.getElementById('total-vendas').textContent = data.totais.total_vendas;
+                    document.getElementById('valor-total-vendas').textContent = 
+                        'R$ ' + data.totais.valor_total_vendas.toFixed(2).replace('.', ',');
+                }
+            }
+        })
+        .catch(error => console.error('Erro ao carregar vendas:', error));
+}
+
+function formatarDataExibicao(data) {
+    // Converte de yyyy-mm-dd para dd/mm/yyyy
+    const parts = data.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
     function formatarData(dateString) {
         if (!dateString || dateString === '0000-00-00') return '';
         const date = new Date(dateString);

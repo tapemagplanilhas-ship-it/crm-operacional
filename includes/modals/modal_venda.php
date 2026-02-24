@@ -119,4 +119,48 @@
             </div>
         </form>
     </div>
+    <script>
+        // Mostra/oculta campos com base no status
+function mostrarCampoMotivoPerdaVenda() {
+    const status = document.getElementById('venda-status').value;
+    const motivoPerdaGroup = document.getElementById('campo-motivo-perda-venda');
+    const formaPagamento = document.getElementById('venda-forma-pagamento');
+    
+    motivoPerdaGroup.style.display = status === 'perdida' ? 'block' : 'none';
+    
+    // Atualiza opções de forma de pagamento conforme status
+    if (status === 'perdida' || status === 'orcamento') {
+        formaPagamento.value = 'na';
+        formaPagamento.disabled = true;
+    } else {
+        formaPagamento.disabled = false;
+    }
+}
+
+// Formata valor monetário
+function formatarMoeda(input) {
+    let value = input.value.replace(/\D/g, '');
+    value = (value / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    input.value = value;
+}
+
+// Formata data
+function formatarData(input) {
+    let value = input.value.replace(/\D/g, '');
+    
+    if (value.length > 2) {
+        value = value.replace(/^(\d{2})/, '$1/');
+    }
+    if (value.length > 5) {
+        value = value.replace(/^(\d{2})\/(\d{2})/, '$1/$2/');
+    }
+    
+    input.value = value.substring(0, 10);
+}
+    </script>
 </div>
