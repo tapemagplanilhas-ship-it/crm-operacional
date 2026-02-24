@@ -45,13 +45,6 @@ $paginas = [
         'perfis' => ['admin']
     ],
     [
-        'id' => 'relatorios_especializados',
-        'nome' => 'Relatórios Espec.',
-        'icone' => 'fas fa-chart-pie',
-        'url' => 'relatorios_especializados.php',
-        'perfis' => ['admin', 'gerencia', 'vendedor'],
-    ],
-    [
         'id' => 'usuarios',
         'nome' => 'Usuários',
         'icone' => 'fas fa-user-cog',

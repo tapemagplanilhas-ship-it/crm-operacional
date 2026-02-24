@@ -4,10 +4,6 @@ require_once 'includes/header.php';
 
 requerirPermissao('vendedor');
 ?>
-
-
-
-
 <div class="page-header">
     
     <h2><i class="fas fa-user-friends"></i> Clientes</h2>

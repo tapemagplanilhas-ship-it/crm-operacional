@@ -79,7 +79,8 @@
                 <input type="text" id="venda-codigo-orcamento" name="codigo_orcamento"
                        placeholder="Ex: 12345" inputmode="numeric"
                        oninput="limparNaoNumericos(this)">
-                <small class="field-hint">Opcional, apenas números</small>
+                <small class="field-hint">Apenas Números</small>
+                </select>
             </div>
             
             <!-- Campo de motivo da perda -->
