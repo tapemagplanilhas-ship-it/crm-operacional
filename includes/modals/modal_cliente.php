@@ -11,20 +11,19 @@
             <div class="form-group">
                 <label for="cliente-nome" class="required">Nome completo</label>
                 <input type="text" id="cliente-nome" name="nome" required 
-                       placeholder="Digite o nome do cliente"
->
+                       placeholder="Digite o nome do cliente">
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="cliente-empresa">Nome da empresa</label>
-                    <input type="text" id="cliente-empresa" name="empresa"
+                    <label for="cliente-empresa" class="required">Nome da empresa</label>
+                    <input type="text" id="cliente-empresa" name="empresa" required
                            placeholder="Nome da empresa">
                 </div>
 
                 <div class="form-group">
-                    <label for="cliente-documento">CNPJ/CPF</label>
-                    <input type="text" id="cliente-documento" name="documento"
+                    <label for="cliente-documento" class="required">CNPJ/CPF</label>
+                    <input type="text" id="cliente-documento" name="documento" required
                            placeholder="00.000.000/0000-00 ou 000.000.000-00"
                            oninput="formatarDocumento(this);"
                            maxlength="18">
@@ -33,23 +32,34 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="cliente-telefone">Telefone</label>
-                    <input type="tel" id="cliente-telefone" name="telefone" 
+                    <label for="cliente-telefone" class="required">Telefone</label>
+                    <input type="tel" id="cliente-telefone" name="telefone" required
                            placeholder="(00) 00000-0000"
                            oninput="formatarTelefone(this); verificarAlteracoesCliente()"
                            maxlength="15">
                 </div>
                 
                 <div class="form-group">
-                    <label for="cliente-email">E-mail</label>
-                    <input type="email" id="cliente-email" name="email" 
+                    <label for="cliente-email" class="required">E-mail</label>
+                    <input type="email" id="cliente-email" name="email" required
                            placeholder="cliente@email.com">
                 </div>
             </div>
+
+            <!-- Novo campo para status do cliente -->
+            <div class="form-group">
+                <label for="cliente-status" class="required">Status do Cliente</label>
+                <select id="cliente-status" name="status_cliente" required class="form-control">
+                    <option value="">Selecione o status</option>
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                    <option value="bloqueado">Bloqueado</option>
+                </select>
+            </div>
             
             <div class="form-group">
-                <label for="cliente-observacoes">Observações</label>
-                <textarea id="cliente-observacoes" name="observacoes" 
+                <label for="cliente-observacoes" class="required">Observações</label>
+                <textarea id="cliente-observacoes" name="observacoes" required
                           placeholder="Anotações sobre o cliente..." 
                           rows="3"></textarea>
             </div>
@@ -96,8 +106,6 @@
                 <button type="submit" class="btn-primary" id="btn-salvar-cliente">
                     <i class="fas fa-save"></i> Salvar Cliente
                 </button>
-
-
             </div>
         </form>
     </div>
@@ -141,13 +149,29 @@ function formatarTelefone(input) {
     input.value = value;
 }
 
+// Função para carregar dados do cliente no modal
+function carregarClienteNoModal(dados) {
+    document.getElementById('cliente-id').value = dados.id || '';
+    document.getElementById('cliente-nome').value = dados.nome || '';
+    document.getElementById('cliente-empresa').value = dados.empresa || '';
+    document.getElementById('cliente-documento').value = dados.documento || '';
+    document.getElementById('cliente-telefone').value = dados.telefone || '';
+    document.getElementById('cliente-email').value = dados.email || '';
+    document.getElementById('cliente-status').value = dados.status_cliente || 'ativo';
+    document.getElementById('cliente-observacoes').value = dados.observacoes || '';
+    
+    // Atualiza título do modal
+    document.getElementById('modal-cliente-title').textContent = 
+        dados.id ? 'Editar Cliente' : 'Novo Cliente';
+}
 </script>
 
 <style>
 /* Estilos para os campos formatados */
 input[type="text"], 
 input[type="tel"],
-input[type="email"] {
+input[type="email"],
+select {
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -158,7 +182,8 @@ input[type="email"] {
 
 input[type="text"]:focus, 
 input[type="tel"]:focus,
-input[type="email"]:focus {
+input[type="email"]:focus,
+select:focus {
     border-color: #d10101;
     outline: none;
     box-shadow: 0 0 0 2px rgba(209, 1, 1, 0.1);
@@ -217,6 +242,12 @@ input[type="email"]:focus {
 .btn-secondary:hover {
     background-color: #555;
 }
+
+.required:after {
+    content: " *";
+    color: #d10101;
+}
+
 #btn-salvar-cliente {
   display: block !important;
   visibility: visible !important;

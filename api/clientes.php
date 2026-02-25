@@ -25,9 +25,12 @@ try {
 
     // Função de sanitização
     $clean = function($data) use ($conn) {
-        return is_array($data) 
-            ? array_map([$conn, 'real_escape_string'], $data) 
-            : $conn->real_escape_string($data);
+        if (is_array($data)) {
+            return array_map(function($item) use ($conn) {
+                return $conn->real_escape_string($item ?? '');
+            }, $data);
+        }
+        return $conn->real_escape_string($data ?? '');
     };
 
     $data = array_map($clean, $inputData);
@@ -36,7 +39,15 @@ try {
         case 'GET':
             if (isset($_GET['id'])) {
                 $id = $clean($_GET['id']);
-                $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
+                $query = "SELECT *, 
+                         COALESCE(
+                             NULLIF(status_cliente, ''), 
+                             'ativo'
+                         ) AS status_cliente 
+                         FROM clientes 
+                         WHERE id = ?";
+                
+                $stmt = $conn->prepare($query);
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 
@@ -47,8 +58,15 @@ try {
                 
                 $response['data'] = $result->fetch_assoc();
             } else {
-                // Lista todos os clientes (vendedores veem todos para vendas)
-                $stmt = $conn->prepare("SELECT * FROM clientes ORDER BY nome");
+                $query = "SELECT *, 
+                         COALESCE(
+                             NULLIF(status_cliente, ''), 
+                             'ativo'
+                         ) AS status_cliente 
+                         FROM clientes 
+                         ORDER BY nome";
+                
+                $stmt = $conn->prepare($query);
                 $stmt->execute();
                 $response['data'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             }
@@ -61,14 +79,13 @@ try {
                 throw new Exception('Nome é obrigatório', 400);
             }
 
-            $fields = ['nome', 'empresa', 'documento', 'telefone', 'email', 'observacoes'];
+            $fields = ['nome', 'empresa', 'documento', 'telefone', 'email', 'observacoes', 'status_cliente'];
             $values = [];
             foreach ($fields as $field) {
-                $values[$field] = $data[$field] ?? '';
+                $values[$field] = $data[$field] ?? ($field === 'status_cliente' ? 'ativo' : '');
             }
 
             if (isset($data['id']) && $data['id']) {
-                // ATUALIZAÇÃO - só dono ou admin pode editar
                 $id = $data['id'];
                 
                 $stmt = $conn->prepare("SELECT id FROM clientes WHERE id = ? AND (usuario_id = ? OR ? = 'admin')");
@@ -79,20 +96,25 @@ try {
                     throw new Exception('Sem permissão para editar este cliente', 403);
                 }
 
-                $query = "UPDATE clientes SET " . implode('=?, ', $fields) . "=? WHERE id = ?";
+                $setParts = [];
+                foreach ($fields as $field) {
+                    $setParts[] = "$field = ?";
+                }
+                
+                $query = "UPDATE clientes SET " . implode(', ', $setParts) . " WHERE id = ?";
                 $params = array_merge(array_values($values), [$id]);
                 
                 $stmt = $conn->prepare($query);
                 $stmt->bind_param(str_repeat('s', count($params)), ...$params);
                 
                 if (!$stmt->execute()) {
-                    throw new Exception('Erro ao atualizar cliente', 500);
+                    throw new Exception('Erro ao atualizar cliente: ' . $stmt->error, 500);
                 }
                 
                 $response['message'] = 'Cliente atualizado com sucesso';
             } else {
-                // CRIAÇÃO - qualquer usuário autenticado pode criar
-                $query = "INSERT INTO clientes (" . implode(', ', $fields) . ", usuario_id) VALUES (" . 
+                $query = "INSERT INTO clientes (" . 
+                         implode(', ', $fields) . ", usuario_id) VALUES (" . 
                          rtrim(str_repeat('?, ', count($fields)), ', ') . ", ?)";
                 
                 $params = array_merge(array_values($values), [$usuarioId]);
@@ -101,14 +123,13 @@ try {
                 $stmt->bind_param(str_repeat('s', count($params)), ...$params);
                 
                 if (!$stmt->execute()) {
-                    throw new Exception('Erro ao criar cliente', 500);
+                    throw new Exception('Erro ao criar cliente: ' . $stmt->error, 500);
                 }
                 
                 $id = $conn->insert_id;
                 $response['message'] = 'Cliente criado com sucesso';
             }
             
-            // Retorna dados atualizados
             $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -123,7 +144,6 @@ try {
             
             $id = $clean($_GET['id']);
             
-            // Só dono ou admin pode excluir
             $stmt = $conn->prepare("SELECT id FROM clientes WHERE id = ? AND (usuario_id = ? OR ? = 'admin')");
             $stmt->bind_param("iis", $id, $usuarioId, $perfil);
             $stmt->execute();
@@ -132,7 +152,6 @@ try {
                 throw new Exception('Sem permissão para excluir este cliente', 403);
             }
 
-            // Verifica vendas (agora permite verificar vendas de qualquer usuário)
             $stmt = $conn->prepare("SELECT COUNT(*) as total FROM vendas WHERE cliente_id = ?");
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -146,7 +165,7 @@ try {
             $stmt->bind_param('i', $id);
             
             if (!$stmt->execute()) {
-                throw new Exception('Erro ao excluir cliente', 500);
+                throw new Exception('Erro ao excluir cliente: ' . $stmt->error, 500);
             }
             
             $response['success'] = true;
@@ -160,6 +179,7 @@ try {
 } catch (Exception $e) {
     http_response_code($e->getCode() ?: 500);
     $response['message'] = $e->getMessage();
+    error_log("Erro em clientes.php: " . $e->getMessage());
 } finally {
     if (isset($conn)) $conn->close();
     echo json_encode($response);

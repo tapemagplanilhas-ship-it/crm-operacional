@@ -34,6 +34,9 @@ requerirPermissao('vendedor');
                 <th class="sortable-header" data-sort="telefone" data-order="">
                     Contato <i class="fas fa-sort"></i>
                 </th>
+                <th class="sortable-header" data-sort="status" data-order="">
+                    Status <i class="fas fa-sort"></i>
+                </th>
                 <th class="sortable-header" data-sort="ultima_venda" data-order="desc">
                     Última Venda <i class="fas fa-sort"></i>
                 </th>
@@ -142,6 +145,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${cliente.telefone ? `<div><i class="fas fa-phone"></i> ${escapeHtml(cliente.telefone)}</div>` : ''}
                     ${cliente.email ? `<div><i class="fas fa-envelope"></i> ${escapeHtml(cliente.email)}</div>` : ''}
                 </td>
+                <td>
+                <span class="badge ${getStatusClass(cliente.status_cliente)}">
+                    ${escapeHtml(cliente.status_cliente)}</span>
+                </td>
+
                 <td>${cliente.ultima_venda && cliente.ultima_venda != '0000-00-00' ? formatarData(cliente.ultima_venda) : 'Nunca'}</td>
                 <td><strong>${formatarMoeda(cliente.total_gasto)}</strong></td>
                 <td>${formatarMoeda(cliente.media_gastos)}</td>
@@ -174,6 +182,20 @@ document.addEventListener('DOMContentLoaded', function() {
             </tr>
         `).join('');
     }
+
+    // Adicione esta função antes da função atualizarTabelaClientes
+function getStatusClass(status) {
+    if (!status) return 'badge-secondary';
+    
+    status = status.toLowerCase();
+    switch(status) {
+        case 'ativo': return 'badge-success';
+        case 'inativo': return 'badge-warning';
+        case 'bloqueado': return 'badge-danger';
+        default: return 'badge-secondary';
+    }
+}
+    
     function carregarVendasCliente(clienteId) {
     fetch(`/api/vendas.php?cliente_id=${clienteId}`)
         .then(response => response.json())
