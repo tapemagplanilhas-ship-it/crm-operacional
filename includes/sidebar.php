@@ -38,13 +38,6 @@ $paginas = [
         'perfis' => ['admin', 'gerencia', 'vendedor']
     ],
     [
-        'id' => 'relatorios',
-        'nome' => 'Relatórios',
-        'icone' => 'fas fa-chart-bar',
-        'url' => 'relatorios.php',
-        'perfis' => ['admin']
-    ],
-    [
         'id' => 'usuarios',
         'nome' => 'Usuários',
         'icone' => 'fas fa-user-cog',
