@@ -5,7 +5,6 @@ require_once 'includes/header.php';
 requerirPermissao('vendedor');
 ?>
 <div class="page-header">
-    
     <h2><i class="fas fa-user-friends"></i> Clientes</h2>
     <div class="page-actions">
         <button type="button" class="btn-primary" data-action="novo-cliente">
@@ -14,17 +13,75 @@ requerirPermissao('vendedor');
         <button type="button" class="btn-success" data-action="venda-rapida">
             <i class="fas fa-bolt"></i> Venda Rápida
         </button>
+        <!-- Novo botão de filtro -->
+        <button type="button" class="btn-info" onclick="abrirModalFiltro()">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
     </div>
 </div>
 
-    <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="search-cliente" placeholder="Buscar cliente por nome..." 
-               onkeyup="buscarClientes()">
-    </div>
+<div class="search-box">
+    <i class="fas fa-search"></i>
+    <input type="text" id="search-cliente" placeholder="Buscar cliente por nome..." 
+           onkeyup="buscarClientes()">
+</div>
 
-<!-- Tabela de Clientes com ordenação -->
-<div class="table-responsive table-responsive-clientes">
+<!-- Modal de Filtro -->
+<div id="modal-filtro" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-filter"></i> Filtros Avançados</h3>
+            <button class="modal-close" onclick="fecharModal('filtro')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Status</label>
+                <div class="filtro-opcoes">
+                    <label class="filtro-option">
+                        <input type="checkbox" name="filtro-status" value="ativo" checked> Ativo
+                    </label>
+                    <label class="filtro-option">
+                        <input type="checkbox" name="filtro-status" value="inativo" checked> Inativo
+                    </label>
+                    <label class="filtro-option">
+                        <input type="checkbox" name="filtro-status" value="bloqueado" checked> Bloqueado
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Ordenar por:</label>
+                <select class="form-control" name="filtro-ordenacao">
+                    <option value="nome_asc">Nome (A-Z)</option>
+                    <option value="nome_desc">Nome (Z-A)</option>
+                    <option value="valor_asc">Valor Gasto (Menor-Maior)</option>
+                    <option value="valor_desc">Valor Gasto (Maior-Menor)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Valor Gasto</label>
+                <select class="form-control" name="filtro-valor">
+                    <option value="todos">Todos</option>
+                    <option value="1000">Acima de R$ 1.000</option>
+                    <option value="5000">Acima de R$ 5.000</option>
+                    <option value="10000">Acima de R$ 10.000</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="fecharModal('filtro')">
+                Cancelar
+            </button>
+            <button type="button" class="btn-primary" onclick="aplicarFiltros()">
+                Aplicar Filtros
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Clientes com cabeçalho fixo -->
+<div class="table-container">
     <table class="data-table sortable" id="tabela-clientes">
         <thead>
             <tr>
@@ -34,7 +91,7 @@ requerirPermissao('vendedor');
                 <th class="sortable-header" data-sort="telefone" data-order="">
                     Contato <i class="fas fa-sort"></i>
                 </th>
-                <th class="sortable-header" data-sort="status" data-order="">
+                <th class="sortable-header" data-sort="status_cliente" data-order="">
                     Status <i class="fas fa-sort"></i>
                 </th>
                 <th class="sortable-header" data-sort="ultima_venda" data-order="desc">
@@ -43,19 +100,12 @@ requerirPermissao('vendedor');
                 <th class="sortable-header" data-sort="total_gasto" data-order="desc">
                     Total Gasto <i class="fas fa-sort"></i>
                 </th>
-                <th class="sortable-header" data-sort="media_gastos" data-order="desc">
-                    Média <i class="fas fa-sort"></i>
-                </th>
-                <th class="sortable-header" data-sort="taxa_fechamento" data-order="desc">
-                    Taxa Fechamento <i class="fas fa-sort"></i>
-                </th>
                 <th class="text-center">Ações</th>
             </tr>
         </thead>
         <tbody id="clientes-body">
-            <!-- Conteúdo será carregado via JavaScript -->
             <tr>
-                <td colspan="7" class="text-center">Carregando clientes...</td>
+                <td colspan="6" class="text-center">Carregando clientes...</td>
             </tr>
         </tbody>
     </table>
@@ -64,7 +114,95 @@ requerirPermissao('vendedor');
 <div id="loading-clientes" class="text-center" style="display: none;">
     <p><i class="fas fa-spinner fa-spin"></i> Carregando...</p>
 </div>
+
 <style>
+/* Estilos para o modal de filtro */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+.filtro-opcoes {
+    display: flex;
+    gap: 15px;
+    margin-top: 8px;
+}
+
+.filtro-option {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
+/* Estilos existentes para a tabela */
+.table-container {
+    position: relative;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+}
+
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background: #b80000;
+    z-index: 10;
+    color: white;
+}
+
 .search-box {
     display: flex;
     align-items: center;
@@ -73,6 +211,7 @@ requerirPermissao('vendedor');
     border: 1px solid #d1d5db;
     padding: 2px 2px;
     width: 260px;
+    margin-bottom: 15px;
 }
 
 .search-box input {
@@ -82,21 +221,72 @@ requerirPermissao('vendedor');
     margin-left: 30px;
     outline: none;
     font-size: 13px;
-    border: none;
 }
 
-.search-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #ffffff;
-    padding: 6px;
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
 }
+
+.badge-success { background-color: #28a745; }
+.badge-warning { background-color: #ffc107; color: #212529; }
+.badge-danger { background-color: #dc3545; }
+.badge-secondary { background-color: #6c757d; }
 </style>
 
 <script>
+// Funções para controlar o modal de filtro
+function abrirModalFiltro() {
+    document.getElementById('modal-filtro').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharModal(tipo) {
+    document.getElementById(`modal-${tipo}`).style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function aplicarFiltros() {
+    const filtros = {
+        status: [],
+        ordenacao: document.querySelector('[name="filtro-ordenacao"]').value,
+        valorMinimo: document.querySelector('[name="filtro-valor"]').value
+    };
+    
+    // Coletar status selecionados
+    document.querySelectorAll('[name="filtro-status"]:checked').forEach(checkbox => {
+        filtros.status.push(checkbox.value);
+    });
+    // Fechar modal e aplicar filtros
+    fecharModal('filtro');
+    filtrarClientes(filtros);
+}
+
+function filtrarClientes(filtros) {
+    // Implemente aqui a lógica para filtrar os clientes
+    console.log('Filtros aplicados:', filtros);
+    // Você pode chamar buscarClientes() com os parâmetros de filtro
+}
+
+// Função para determinar a classe do status
+function getStatusClass(status) {
+    if (!status) return 'badge-secondary';
+    
+    status = status.toLowerCase();
+    switch(status) {
+        case 'ativo': return 'badge-success';
+        case 'inativo': return 'badge-warning';
+        case 'bloqueado': return 'badge-danger';
+        default: return 'badge-secondary';
+    }
+}
+
+// Restante do seu JavaScript existente...
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar busca
     const searchInput = document.getElementById('search-cliente');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -104,7 +294,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Função para buscar clientes
     async function buscarClientes(termo) {
         try {
             const response = await fetch('api/clientes.php');
@@ -125,13 +314,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Função para atualizar tabela
     function atualizarTabelaClientes(clientes) {
         const tbody = document.getElementById('clientes-body');
         if (!tbody) return;
         
         if (!clientes || clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente encontrado</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum cliente encontrado</td></tr>';
             return;
         }
         
@@ -146,18 +334,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${cliente.email ? `<div><i class="fas fa-envelope"></i> ${escapeHtml(cliente.email)}</div>` : ''}
                 </td>
                 <td>
-                <span class="badge ${getStatusClass(cliente.status_cliente)}">
-                    ${escapeHtml(cliente.status_cliente)}</span>
-                </td>
-
-                <td>${cliente.ultima_venda && cliente.ultima_venda != '0000-00-00' ? formatarData(cliente.ultima_venda) : 'Nunca'}</td>
-                <td><strong>${formatarMoeda(cliente.total_gasto)}</strong></td>
-                <td>${formatarMoeda(cliente.media_gastos)}</td>
-                <td>
-                    <span class="badge ${cliente.taxa_fechamento >= 50 ? 'badge-success' : cliente.taxa_fechamento >= 25 ? 'badge-warning' : 'badge-danger'}">
-                        ${cliente.taxa_fechamento ? parseFloat(cliente.taxa_fechamento).toFixed(1) + '%' : '0%'}
+                    <span class="badge ${getStatusClass(cliente.status_cliente)}">
+                        ${cliente.status_cliente ? cliente.status_cliente.toUpperCase() : 'N/D'}
                     </span>
                 </td>
+                <td>${cliente.ultima_venda && cliente.ultima_venda != '0000-00-00' ? formatarData(cliente.ultima_venda) : 'Nunca'}</td>
+                <td><strong>${formatarMoeda(cliente.total_gasto)}</strong></td>
                 <td class="text-center">
                     <div class="actions-menu">
                         <button class="actions-toggle" onclick="toggleActionsMenu(this)">
@@ -170,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <button onclick="abrirModalCliente(${cliente.id})">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
-                            <button onclick="abrirModalVenda(${cliente.id}, '${escapeHtml(cliente.nome).replace(/'/g, "\\'")}')">
+                            <button onclick="abrirModalVenda(${cliente.id}, '${escapeHtml(cliente.nome).replace(/'/g, "\'")}')">
                                 <i class="fas fa-shopping-cart"></i> Nova Venda
                             </button>
                             <button class="danger" onclick="excluirCliente(${cliente.id})">
@@ -183,56 +365,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
     }
 
-    // Adicione esta função antes da função atualizarTabelaClientes
-function getStatusClass(status) {
-    if (!status) return 'badge-secondary';
-    
-    status = status.toLowerCase();
-    switch(status) {
-        case 'ativo': return 'badge-success';
-        case 'inativo': return 'badge-warning';
-        case 'bloqueado': return 'badge-danger';
-        default: return 'badge-secondary';
-    }
-}
-    
-    function carregarVendasCliente(clienteId) {
-    fetch(`/api/vendas.php?cliente_id=${clienteId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                // Atualiza a lista de vendas na página
-                const tbody = document.querySelector('#vendas-cliente tbody');
-                tbody.innerHTML = '';
-                
-                data.data.forEach(venda => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${formatarDataExibicao(venda.data_venda)}</td>
-                        <td>${venda.status}</td>
-                        <td>R$ ${venda.valor.toFixed(2).replace('.', ',')}</td>
-                        <td>${venda.forma_pagamento}</td>
-                        <td>${venda.observacoes || '-'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                // Atualiza os totais do cliente
-                if (data.totais) {
-                    document.getElementById('total-vendas').textContent = data.totais.total_vendas;
-                    document.getElementById('valor-total-vendas').textContent = 
-                        'R$ ' + data.totais.valor_total_vendas.toFixed(2).replace('.', ',');
-                }
-            }
-        })
-        .catch(error => console.error('Erro ao carregar vendas:', error));
-}
-
-function formatarDataExibicao(data) {
-    // Converte de yyyy-mm-dd para dd/mm/yyyy
-    const parts = data.split('-');
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
     function formatarData(dateString) {
         if (!dateString || dateString === '0000-00-00') return '';
         const date = new Date(dateString);
@@ -252,18 +384,15 @@ function formatarDataExibicao(data) {
         return div.innerHTML;
     }
     
-    // Função para menu de ações
     window.toggleActionsMenu = function(button) {
         const dropdown = button.nextElementSibling;
         const isShowing = dropdown.classList.contains('show');
         
-        // Fechar todos
         document.querySelectorAll('.actions-dropdown.show').forEach(d => {
             d.classList.remove('show');
             d.classList.remove('drop-up');
         });
         
-        // Abrir/fechar atual
         if (!isShowing) {
             dropdown.classList.add('show');
 
@@ -297,7 +426,6 @@ function formatarDataExibicao(data) {
         }
     };
     
-    // Função para excluir cliente
     window.excluirCliente = async function(clienteId) {
         if (typeof window.confirmarExclusao !== 'function') return;
         const confirmado = await window.confirmarExclusao('Tem certeza que deseja excluir este cliente?');
@@ -322,109 +450,8 @@ function formatarDataExibicao(data) {
         }
     };
     
-    // Carregar clientes inicialmente
     buscarClientes('');
 });
-
-// No clientes.php, substitua a função buscarClientes por:
-async function buscarClientes(termo = '') {
-    try {
-        const response = await fetch('api/clientes.php');
-        const data = await response.json();
-        
-        if (data.success && data.data) {
-            window.clientesData = data.data; // Salvar dados globalmente
-            
-            let clientesFiltrados = data.data;
-            
-            // Aplicar filtro de busca
-            if (termo && termo.length >= 2) {
-                clientesFiltrados = data.data.filter(cliente => 
-                    cliente.nome.toLowerCase().includes(termo.toLowerCase()) ||
-                    (cliente.telefone && cliente.telefone.includes(termo)) ||
-                    (cliente.email && cliente.email.toLowerCase().includes(termo.toLowerCase()))
-                );
-            }
-            
-            // Aplicar ordenação atual
-            const sortHeader = document.querySelector('.sortable-header[data-order]');
-            if (sortHeader && sortHeader.dataset.order) {
-                const sortBy = sortHeader.dataset.sort;
-                const order = sortHeader.dataset.order;
-                
-                clientesFiltrados.sort((a, b) => {
-                    let valA = a[sortBy] || '';
-                    let valB = b[sortBy] || '';
-                    
-                    if (['total_gasto', 'media_gastos', 'taxa_fechamento'].includes(sortBy)) {
-                        valA = parseFloat(valA) || 0;
-                        valB = parseFloat(valB) || 0;
-                    }
-                    
-                    if (sortBy === 'ultima_venda') {
-                        valA = valA ? new Date(valA).getTime() : 0;
-                        valB = valB ? new Date(valB).getTime() : 0;
-                    }
-                    
-                    if (order === 'asc') {
-                        return valA < valB ? -1 : valA > valB ? 1 : 0;
-                    } else {
-                        return valA > valB ? -1 : valA < valB ? 1 : 0;
-                    }
-                });
-            }
-            
-            atualizarTabelaClientes(clientesFiltrados);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-    }
-}
-
-// Atualizar a função ordenarClientes para usar os dados locais
-async function ordenarClientes(sortBy, order) {
-    if (!window.clientesData) {
-        await buscarClientes('');
-    }
-    
-    let clientesFiltrados = window.clientesData || [];
-    const termo = document.getElementById('search-cliente')?.value || '';
-    
-    // Aplicar filtro de busca
-    if (termo && termo.length >= 2) {
-        clientesFiltrados = window.clientesData.filter(cliente => 
-            cliente.nome.toLowerCase().includes(termo.toLowerCase()) ||
-            (cliente.telefone && cliente.telefone.includes(termo)) ||
-            (cliente.email && cliente.email.toLowerCase().includes(termo.toLowerCase()))
-        );
-    }
-    
-    // Ordenar
-    clientesFiltrados.sort((a, b) => {
-        let valA = a[sortBy] || '';
-        let valB = b[sortBy] || '';
-        
-        if (['total_gasto', 'media_gastos', 'taxa_fechamento'].includes(sortBy)) {
-            valA = parseFloat(valA) || 0;
-            valB = parseFloat(valB) || 0;
-        }
-        
-        if (sortBy === 'ultima_venda') {
-            valA = valA ? new Date(valA).getTime() : 0;
-            valB = valB ? new Date(valB).getTime() : 0;
-        }
-        
-        if (order === 'asc') {
-            return valA < valB ? -1 : valA > valB ? 1 : 0;
-        } else if (order === 'desc') {
-            return valA > valB ? -1 : valA < valB ? 1 : 0;
-        }
-        
-        return 0;
-    });
-    
-    atualizarTabelaClientes(clientesFiltrados);
-}
 </script>
 
 <?php 
