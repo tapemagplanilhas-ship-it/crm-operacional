@@ -63,7 +63,7 @@
 
             <div class="cliente-vendas" id="cliente-vendas-container" style="display: none;">
                 <div class="cliente-vendas-header">
-                    <h3><i class="fas fa-receipt"></i> Vendas do Cliente</h3>
+                    <h3><i class="fas fa-receipt"></i> Histórico de Vendas</h3>
                 </div>
                 <div id="cliente-vendas-loading" class="text-center" style="display: none;">
                     <i class="fas fa-spinner fa-spin"></i> Carregando vendas...

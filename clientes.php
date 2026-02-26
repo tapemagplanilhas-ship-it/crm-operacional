@@ -13,10 +13,6 @@ requerirPermissao('vendedor');
         <button type="button" class="btn-success" data-action="venda-rapida">
             <i class="fas fa-bolt"></i> Venda Rápida
         </button>
-        <!-- Novo botão de filtro -->
-        <button type="button" class="btn-info" onclick="abrirModalFiltro()">
-            <i class="fas fa-filter"></i> Filtrar
-        </button>
     </div>
 </div>
 
@@ -25,44 +21,43 @@ requerirPermissao('vendedor');
     <input type="text" id="search-cliente" placeholder="Buscar cliente por nome..." 
            onkeyup="buscarClientes()">
 </div>
+<div class="filter-trigger">
+        <button type="button" class="btn-filter" onclick="abrirModalFiltro()">
+            <i class="fas fa-filter"></i> Filtrar e Ordenar
+        </button>
+    </div>
 
 <!-- Modal de Filtro -->
 <div id="modal-filtro" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fas fa-filter"></i> Filtros Avançados</h3>
+            <h3><i class="fas fa-sliders-h"></i> Refinar Resultados</h3>
             <button class="modal-close" onclick="fecharModal('filtro')">&times;</button>
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label>Status</label>
+                <label class="label-bold">Status Operacional</label>
                 <div class="filtro-opcoes">
-                    <label class="filtro-option">
-                        <input type="checkbox" name="filtro-status" value="ativo" checked> Ativo
-                    </label>
-                    <label class="filtro-option">
-                        <input type="checkbox" name="filtro-status" value="inativo" checked> Inativo
-                    </label>
-                    <label class="filtro-option">
-                        <input type="checkbox" name="filtro-status" value="bloqueado" checked> Bloqueado
-                    </label>
+                    <label class="checkbox-item"><input type="checkbox" name="filtro-status" value="ativo" checked> Ativo</label>
+                    <label class="checkbox-item"><input type="checkbox" name="filtro-status" value="inativo" checked> Inativo</label>
+                    <label class="checkbox-item"><input type="checkbox" name="filtro-status" value="bloqueado" checked> Bloqueado</label>
                 </div>
             </div>
             
             <div class="form-group">
-                <label>Ordenar por:</label>
-                <select class="form-control" name="filtro-ordenacao">
+                <label class="label-bold">Critério de Ordenação</label>
+                <select class="form-control" id="filtro-ordenacao">
                     <option value="nome_asc">Nome (A-Z)</option>
                     <option value="nome_desc">Nome (Z-A)</option>
-                    <option value="valor_asc">Valor Gasto (Menor-Maior)</option>
-                    <option value="valor_desc">Valor Gasto (Maior-Menor)</option>
+                    <option value="valor_desc">Maior Faturamento (LTV)</option>
+                    <option value="valor_asc">Menor Faturamento</option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label>Valor Gasto</label>
-                <select class="form-control" name="filtro-valor">
-                    <option value="todos">Todos</option>
+                <label class="label-bold">Volume de Compras (Mínimo)</label>
+                <select class="form-control" id="filtro-valor">
+                    <option value="0">Todos os volumes</option>
                     <option value="1000">Acima de R$ 1.000</option>
                     <option value="5000">Acima de R$ 5.000</option>
                     <option value="10000">Acima de R$ 10.000</option>
@@ -70,12 +65,8 @@ requerirPermissao('vendedor');
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="fecharModal('filtro')">
-                Cancelar
-            </button>
-            <button type="button" class="btn-primary" onclick="aplicarFiltros()">
-                Aplicar Filtros
-            </button>
+            <button type="button" class="btn-secondary" onclick="fecharModal('filtro')">Cancelar</button>
+            <button type="button" class="btn-primary" onclick="processarFiltros()">Aplicar Filtros</button>
         </div>
     </div>
 </div>
@@ -239,39 +230,125 @@ requerirPermissao('vendedor');
 </style>
 
 <script>
-// Funções para controlar o modal de filtro
-function abrirModalFiltro() {
-    document.getElementById('modal-filtro').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+
+let masterData = []; 
+let filteredData = [];
+
+async function sincronizarDados() {
+    try {
+        console.log("📡 Tentando conectar ao endpoint: api/clientes.php...");
+        
+        const response = await fetch('api/clientes.php');
+        
+        // Verifica se o servidor respondeu (Status 200)
+        if (!response.ok) {
+            throw new Error(`Erro HTTP! Status: ${response.status}`);
+        }
+
+        const textoPuro = await response.text(); // Lemos como texto primeiro para ver se há erros de PHP
+        
+        try {
+            const result = JSON.parse(textoPuro);
+            if (result.success) {
+                masterData = result.data;
+                console.log("✅ Dados sincronizados com sucesso:", masterData.length, "clientes.");
+                processarFiltros();
+            } else {
+                console.error("❌ Erro na lógica da API:", result.message);
+            }
+        } catch (e) {
+            console.error("⚠️ O PHP não enviou um JSON válido. Ele enviou isso aqui ó:", textoPuro);
+            throw new Error("Resposta do servidor inválida.");
+        }
+
+    } catch (error) {
+        console.error('🚨 Falha Crítica:', error);
+        document.getElementById('clientes-body').innerHTML = 
+            `<tr><td colspan="6" class="text-center text-danger">
+                <b>Erro de Conexão:</b> ${error.message}<br>
+                <small>Verifique o console (F12) para detalhes técnicos.</small>
+            </td></tr>`;
+    }
 }
 
-function fecharModal(tipo) {
-    document.getElementById(`modal-${tipo}`).style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
+function processarFiltros() {
+    const termoBusca = document.getElementById('search-cliente').value.toLowerCase();
+    const statusPermitidos = Array.from(document.querySelectorAll('[name="filtro-status"]:checked')).map(cb => cb.value);
+    const valorMinimo = parseFloat(document.getElementById('filtro-valor').value);
+    const ordenacao = document.getElementById('filtro-ordenacao').value;
 
-function aplicarFiltros() {
-    const filtros = {
-        status: [],
-        ordenacao: document.querySelector('[name="filtro-ordenacao"]').value,
-        valorMinimo: document.querySelector('[name="filtro-valor"]').value
-    };
-    
-    // Coletar status selecionados
-    document.querySelectorAll('[name="filtro-status"]:checked').forEach(checkbox => {
-        filtros.status.push(checkbox.value);
+    // 1. Filtragem Lógica
+    filteredData = masterData.filter(cliente => {
+        const matchesBusca = !termoBusca || 
+            cliente.nome.toLowerCase().includes(termoBusca) ||
+            (cliente.telefone && cliente.telefone.includes(termoBusca)) ||
+            (cliente.email && cliente.email.toLowerCase().includes(termoBusca));
+            
+        const matchesStatus = statusPermitidos.includes(cliente.status_cliente?.toLowerCase());
+        const matchesValor = parseFloat(cliente.total_gasto || 0) >= valorMinimo;
+
+        return matchesBusca && matchesStatus && matchesValor;
     });
-    // Fechar modal e aplicar filtros
+
+    // 2. Ordenação de Dados
+    filteredData.sort((a, b) => {
+        const [campo, direcao] = ordenacao.split('_');
+        
+        if (campo === 'nome') {
+            return direcao === 'asc' 
+                ? a.nome.localeCompare(b.nome) 
+                : b.nome.localeCompare(a.nome);
+        }
+        
+        if (campo === 'valor') {
+            const valA = parseFloat(a.total_gasto || 0);
+            const valB = parseFloat(b.total_gasto || 0);
+            return direcao === 'asc' ? valA - valB : valB - valA;
+        }
+
+        if (campo === 'data') {
+            const dataA = new Date(a.ultima_venda || '1970-01-01');
+            const dataB = new Date(b.ultima_venda || '1970-01-01');
+            return dataB - dataA; // Sempre desc para data por padrão
+        }
+    });
+
+    renderizarTabela();
     fecharModal('filtro');
-    filtrarClientes(filtros);
 }
 
-function filtrarClientes(filtros) {
-    // Implemente aqui a lógica para filtrar os clientes
-    console.log('Filtros aplicados:', filtros);
-    // Você pode chamar buscarClientes() com os parâmetros de filtro
-}
+function renderizarTabela() {
+    const tbody = document.getElementById('clientes-body');
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum registro encontrado para os critérios selecionados.</td></tr>';
+        return;
+    }
 
+    tbody.innerHTML = filteredData.map(cliente => `
+        <tr>
+            <td>
+                <div class="font-bold"><strong>${escapeHtml(cliente.nome)}</strong></div>
+                <div class="text-small text-muted">${cliente.id}</div>
+            </td>
+            <td>
+                ${cliente.telefone ? `<div><i class="fas fa-phone"></i> ${formatarTelefone(cliente.telefone)}</div>` : ''}
+                ${cliente.email ? `<div class="text-muted"><i class="fas fa-envelope"></i> ${escapeHtml(cliente.email)}</div>` : ''}
+            </td>
+            <td>
+                <span class="badge badge-${cliente.status_cliente?.toLowerCase()}">
+                    ${cliente.status_cliente || 'N/D'}
+                </span>
+            </td>
+            <td>${formatarData(cliente.ultima_venda)}</td>
+            <td><strong>${formatarMoeda(cliente.total_gasto)}</strong></td>
+            <td class="text-center">
+                <button class="btn-icon" onclick="abrirModalClienteDetalhes(${cliente.id})" title="Ver Perfil"><i class="fas fa-eye"></i></button>
+                <button class="btn-icon" onclick="abrirModalCliente(${cliente.id})" title="Editar"><i class="fas fa-edit"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
 // Função para determinar a classe do status
 function getStatusClass(status) {
     if (!status) return 'badge-secondary';
@@ -452,6 +529,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     buscarClientes('');
 });
+
+function abrirModalFiltro() { document.getElementById('modal-filtro').style.display = 'flex'; }
+function fecharModal(id) { document.getElementById('modal-'+id).style.display = 'none'; }
 </script>
 
 <?php 
