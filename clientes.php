@@ -71,6 +71,8 @@ requerirPermissao('vendedor');
     </div>
 </div>
 
+
+
 <!-- Tabela de Clientes com cabeçalho fixo -->
 <div class="table-container">
     <table class="data-table sortable" id="tabela-clientes">
@@ -101,12 +103,37 @@ requerirPermissao('vendedor');
         </tbody>
     </table>
 </div>
+<div style="text-align: center; margin-top: 8px;">
+    <button class="btn-expandir" id="btn-expandir" onclick="toggleExpandirTabela()">
+        <i class="fas fa-expand-alt"></i> Expandir Tabela
+    </button>
+</div>
 
 <div id="loading-clientes" class="text-center" style="display: none;">
     <p><i class="fas fa-spinner fa-spin"></i> Carregando...</p>
 </div>
 
 <style>
+
+    .btn-expandir {
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-expandir:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.table-container.expandida {
+    max-height: 80vh !important;
+}
 /* Estilos para o modal de filtro */
 .modal {
     display: none;
@@ -574,6 +601,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     buscarClientes('');
 });
+function toggleExpandirTabela() {
+    const tabela = document.querySelector('.table-container');
+    const btn    = document.getElementById('btn-expandir');
+    const expandida = tabela.classList.toggle('expandida');
+
+    btn.innerHTML = expandida
+        ? '<i class="fas fa-compress-alt"></i> Recolher Tabela'
+        : '<i class="fas fa-expand-alt"></i> Expandir Tabela';
+}
 </script>
 
 <?php 

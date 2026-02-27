@@ -67,3 +67,114 @@
     <script src="assets/js/scripts.js"></script>
 </body>
 </html>
+
+<script>
+// 
+// NOTIFICADOR GLOBAL DE TAREFAS
+// Verifica tarefas pendentes a cada 60s
+// 
+(function iniciarNotificador() {
+    verificarTarefas();
+    setInterval(verificarTarefas, 60000); // a cada 1 minuto
+})();
+
+async function verificarTarefas() {
+    try {
+        const res  = await fetch('api/tarefas.php?status=pendente&hoje=1');
+        const json = await res.json();
+
+        if (!json.success) return;
+
+        const tarefas    = json.data;
+        const atrasadas  = tarefas.filter(t => t.atrasada == 1);
+        const proximas   = tarefas.filter(t => {
+            const diff = (new Date(t.data_agendada) - new Date()) / 60000; // em minutos
+            return diff > 0 && diff &lt;= 30;
+        });
+
+        // Atualiza badge no menu (se existir)
+        const badge = document.getElementById('badge-tarefas');
+        if (badge) {
+            const total = tarefas.length;
+            badge.textContent = total;
+            badge.style.display = total > 0 ? 'inline-block' : 'none';
+        }
+
+        // Notifica tarefas atrasadas
+        atrasadas.forEach(t => {
+            if (!sessionStorage.getItem('notif_' + t.id)) {
+                mostrarNotificacaoTarefa(t, 'atrasada');
+                sessionStorage.setItem('notif_' + t.id, '1');
+            }
+        });
+
+        // Notifica tarefas próximas (30 min)
+        proximas.forEach(t => {
+            if (!sessionStorage.getItem('prox_' + t.id)) {
+                mostrarNotificacaoTarefa(t, 'proxima');
+                sessionStorage.setItem('prox_' + t.id, '1');
+            }
+        });
+
+    } catch(e) { /* silencioso */ }
+}
+
+function mostrarNotificacaoTarefa(tarefa, tipo) {
+    const icone = {
+        whatsapp: '💬', ligacao: '📞', email: '📧', visita: '🤝', outro: '📌'
+    };
+    const cor   = tipo === 'atrasada' ? '#dc2626' : '#f59e0b';
+    const label = tipo === 'atrasada' ? '⚠️ ATRASADA' : '⏰ em 30min';
+    const hora  = new Date(tarefa.data_agendada).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+    const notif = document.createElement('div');
+    notif.className = 'notif-tarefa';
+    notif.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border-left: 4px solid ${cor};
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        padding: 14px 18px;
+        z-index: 999999;
+        max-width: 320px;
+        animation: slideInRight 0.3s ease;
+        cursor: pointer;
+    `;
+
+    notif.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+                <div style="font-size:11px; color:${cor}; font-weight:700; margin-bottom:3px;">
+                    ${label} — ${hora}
+                </div>
+                <div style="font-weight:600; font-size:13px; color:#111;">
+                    ${icone[tarefa.tipo] || '📌'} ${tarefa.titulo}
+                </div>
+                <div style="font-size:12px; color:#6b7280; margin-top:3px;">
+                    👤 ${tarefa.cliente_nome}
+                </div>
+            </div>
+            <button onclick="this.closest('.notif-tarefa').remove()" 
+                style="background:none; border:none; color:#9ca3af; cursor:pointer; font-size:16px; padding:0;">×</button>
+        </div>
+    `;
+
+    // Fecha automaticamente em 8 segundos
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 8000);
+}
+
+// CSS da animação
+const styleNotif = document.createElement('style');
+styleNotif.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to   { transform: translateX(0);   opacity: 1; }
+    }
+    .notif-tarefa:hover { transform: scale(1.01); }
+`;
+document.head.appendChild(styleNotif);
+</script>
