@@ -13,6 +13,7 @@ $permissoes = array (
     7 => 'relatorios_especializados',
     8 => 'usuarios',
     9 => 'vendas',
+    10 => 'entregas',
   ),
   'gerencia' => 
   array (
@@ -23,6 +24,7 @@ $permissoes = array (
     4 => 'gestao',
     5 => 'relatorios_especializados',
     6 => 'vendas',
+    7 => 'entregas',
   ),
   'vendedor' => 
   array (
@@ -32,6 +34,7 @@ $permissoes = array (
     3 => 'dashboard_geral',
     4 => 'relatorios_especializados',
     5 => 'vendas',
+    6 => 'entregas',
   ),
   'financeiro' => 
   array (
@@ -39,6 +42,7 @@ $permissoes = array (
     1 => 'dashboard',
     2 => 'relatorios',
     3 => 'relatorios_especializados',
+    4 => 'entregas',
   ),
   'caixa' => 
   array (

@@ -38,6 +38,13 @@ $paginas = [
         'perfis' => ['admin', 'gerencia', 'vendedor']
     ],
     [
+        'id' => 'entregas',
+        'nome' => 'Entregas',
+        'icone' => 'fas fa-truck',
+        'url' => 'entregas.php',
+        'perfis' => ['admin', 'gerencia', 'vendedor']
+    ],
+    [
         'id' => 'usuarios',
         'nome' => 'Usuários',
         'icone' => 'fas fa-user-cog',
@@ -164,11 +171,11 @@ $email = htmlspecialchars($usuario_logado['email']);
                     <span>Ajuda</span>
                 </a>
                 <div class="dropdown-divider"></div>
-                <a href="logout.php" class="dropdown-item logout-item">
+                    <a href="logout.php" class="dropdown-item logout-item">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Sair</span>
-                </a>
-            </div>
+                    </a>
+                </div>
         </div>
     </div>
 </aside>
